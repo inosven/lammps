@@ -1,0 +1,4 @@
+#xmin   xmax    ymin    ymax    zmin    zmax
+0.45    0.55    0.0     1.0     0.0     1.0
+#idire (source line direction: 0 = x, 1 = y, 2 = z)
+1

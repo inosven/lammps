@@ -1,0 +1,1 @@
+g++ getcycle.cpp -std=c++0x -O3 -o getcycle
