@@ -37,12 +37,6 @@ int main(int argc, char **argv)
   bool outputSolid = false;
   bool outputFluid = false;
 
-  const unsigned int typeSolidVoxel = 0;
-  const unsigned int typeFluidVoxel = 1;
-
-  const unsigned int typeSolid = 1;
-  const unsigned int typeFluid = 2;
-
   unsigned int ix,iy,iz,ivoxel;
   unsigned int imgNx, imgNy, imgNz;
   unsigned int roiNxLo, roiNxHi;
@@ -70,7 +64,9 @@ int main(int argc, char **argv)
   unsigned int myFluidBeadIndex;
 
   double myScale = 0.0;
-  double h = 0.0;
+  double hx = 0.0;
+  double hy = 0.0;
+  double hz = 0.0;
   double xlo = 0.0;
   double xhi = 0.0;
   double ylo = 0.0;
@@ -135,13 +131,29 @@ int main(int argc, char **argv)
   // Read the physical length of unit resolution in nm
 
   std::getline(controlFile,skipLine);
-  controlFile >> h; std::getline(controlFile,skipLine);
+  controlFile >> hx >> hy >> hz; std::getline(controlFile,skipLine);
 
-  if (h <= 0.0)
+  if (hx <= 0.0)
   {
     std::cout
       << "\n" << "Fatal: in file " << controlFileName
-      << " h = " << h << " is not a valid value.\n";
+      << " hx = " << hx << " is not a valid value.\n";
+    std::exit(0);
+  }
+
+  if (hy <= 0.0)
+  {
+    std::cout
+      << "\n" << "Fatal: in file " << controlFileName
+      << " hy = " << hy << " is not a valid value.\n";
+    std::exit(0);
+  }
+
+  if (hz <= 0.0)
+  {
+    std::cout
+      << "\n" << "Fatal: in file " << controlFileName
+      << " hz = " << hz << " is not a valid value.\n";
     std::exit(0);
   }
 
@@ -195,7 +207,7 @@ int main(int argc, char **argv)
     std::exit(0);
   }
 
-  // Read the number of wall voxels
+  // Read the number of voxels
 
   std::getline(controlFile,skipLine);
   controlFile >> numVoxels; std::getline(controlFile,skipLine);
@@ -231,21 +243,21 @@ int main(int argc, char **argv)
   // Screen print of header information
   // ==================================
 
-  xhi = double(imgNx) * h;
-  yhi = double(imgNy) * h;
-  zhi = double(imgNz) * h;
+  xhi = double(imgNx) * hx;
+  yhi = double(imgNy) * hy;
+  zhi = double(imgNz) * hz;
 
-  roixlo = double(roiNxLo - 1) * h;
-  roixhi = double(roiNxHi)     * h;
-  roiylo = double(roiNyLo - 1) * h;
-  roiyhi = double(roiNyHi)     * h;
-  roizlo = double(roiNzLo - 1) * h;
-  roizhi = double(roiNzHi)     * h;
+  roixlo = double(roiNxLo - 1) * hx;
+  roixhi = double(roiNxHi)     * hx;
+  roiylo = double(roiNyLo - 1) * hy;
+  roiyhi = double(roiNyHi)     * hy;
+  roizlo = double(roiNzLo - 1) * hz;
+  roizhi = double(roiNzHi)     * hz;
 
   std::cout << std::left << std::setfill('.')
     << std::setw(40) << "IMG: imgNx,imgNy,imgNz  "       << "  " << imgNx << "," << imgNy << "," << imgNz << "\n"
     << std::setw(40) << "IMG: check voxel range  "       << "  " << (checkRange ? "Yes" : "No") << "\n"
-    << std::setw(40) << "IMG: h [nm]  "                  << "  " << h << "\n"
+    << std::setw(40) << "IMG: hx,hy,hz [nm]  "           << "  " << hx << "," << hy << "," << hz << "\n"
     << std::setw(40) << "IMG: xlo,xhi [nm]  "            << "  " << xlo << "," << xhi << "\n"
     << std::setw(40) << "IMG: ylo,yhi [nm]  "            << "  " << ylo << "," << yhi << "\n"
     << std::setw(40) << "IMG: zlo,zhi [nm]  "            << "  " << zlo << "," << zhi << "\n"
@@ -305,40 +317,40 @@ int main(int argc, char **argv)
     bool isROI = true;
 
     if (ix < roiNxLo || ix > roiNxHi) isROI = false;
-    if (iy < roiNxLo || iy > roiNxHi) isROI = false;
-    if (iz < roiNxLo || iz > roiNxHi) isROI = false;
+    if (iy < roiNyLo || iy > roiNyHi) isROI = false;
+    if (iz < roiNzLo || iz > roiNzHi) isROI = false;
 
     // count numbers
 
-    switch(ivoxel)
+    if (ivoxel == 0)
     {
-      case (typeSolidVoxel) :
-        numSolidVoxels ++;
-        if (isROI)
-        {
-          numVoxelsROI ++;
-          numSolidVoxelsROI ++;
-          numSolidBeads += numSolidBeadsPerVoxel;
-          numBeads      += numSolidBeadsPerVoxel;
-        }
-        break;
-      case (typeFluidVoxel) :
-        numFluidVoxels ++;
-        if (isROI)
-        {
-          numVoxelsROI ++;
-          numFluidVoxelsROI ++;
-          numFluidBeads += numFluidBeadsPerVoxel;
-          numBeads      += numFluidBeadsPerVoxel;
-        }
-        break;
-      default :
-        std::cout
-          << "\n Error: in file " << inputDataFileName << "\n"
-          << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
-          << "contains an invalid voxel value ...\n";
-        std::exit(0);
-        break;
+      numSolidVoxels ++;
+      if (isROI)
+      {
+        numVoxelsROI ++;
+        numSolidVoxelsROI ++;
+        numSolidBeads += numSolidBeadsPerVoxel;
+        numBeads      += numSolidBeadsPerVoxel;
+      }
+    }
+    else if (ivoxel < 12)
+    {
+      numFluidVoxels ++;
+      if (isROI)
+      {
+        numVoxelsROI ++;
+        numFluidVoxelsROI ++;
+        numFluidBeads += numFluidBeadsPerVoxel;
+        numBeads      += numFluidBeadsPerVoxel;
+      }
+    }
+    else
+    {
+      std::cout
+        << "\n Error: in file " << inputDataFileName << "\n"
+        << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
+        << "contains an invalid voxel value ...\n";
+      std::exit(0);
     }
   }
   std::cout << "\n";
@@ -440,53 +452,53 @@ int main(int argc, char **argv)
     bool isROI = true;
 
     if (ix < roiNxLo || ix > roiNxHi) isROI = false;
-    if (iy < roiNxLo || iy > roiNxHi) isROI = false;
-    if (iz < roiNxLo || iz > roiNxHi) isROI = false;
+    if (iy < roiNyLo || iy > roiNyHi) isROI = false;
+    if (iz < roiNzLo || iz > roiNzHi) isROI = false;
     if (!isROI) continue;
 
-    switch(ivoxel)
+    if (ivoxel == 0)
     {
-      case (typeSolidVoxel) :
-        if (outputSolid)
+      if (outputSolid)
+      {
+        for (unsigned int i = 1; i <= numSolidBeadsPerVoxel; i++)
         {
-          for (unsigned int i = 1; i <= numSolidBeadsPerVoxel; i++)
-          {
-            mySolidBeadIndex ++;
+          mySolidBeadIndex ++;
 
-            // Each call to dis(gen) generates a new random double
+          // Each call to dis(gen) generates a new random double
 
-            xrnd = myScale * (double(ix - 1) * h + dis(gen) * h);
-            yrnd = myScale * (double(iy - 1) * h + dis(gen) * h);
-            zrnd = myScale * (double(iz - 1) * h + dis(gen) * h);
+          xrnd = myScale * (double(ix - 1) + dis(gen)) * hx;
+          yrnd = myScale * (double(iy - 1) + dis(gen)) * hy;
+          zrnd = myScale * (double(iz - 1) + dis(gen)) * hz;
 
-            outputSolidFile << mySolidBeadIndex << " " << typeSolid << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
-          }
+          outputSolidFile << mySolidBeadIndex << " " << (ivoxel+1) << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
         }
-        break;
-      case (typeFluidVoxel) :
-        if (outputFluid)
+      }
+    }
+    else if (ivoxel < 12)
+    {
+      if (outputFluid)
+      {
+        for (unsigned int i = 1; i <= numFluidBeadsPerVoxel; i++)
         {
-          for (unsigned int i = 1; i <= numFluidBeadsPerVoxel; i++)
-          {
-            myFluidBeadIndex ++;
+          myFluidBeadIndex ++;
 
-            // Each call to dis(gen) generates a new random double
+          // Each call to dis(gen) generates a new random double
 
-            xrnd = myScale * (double(ix - 1) * h + dis(gen) * h);
-            yrnd = myScale * (double(iy - 1) * h + dis(gen) * h);
-            zrnd = myScale * (double(iz - 1) * h + dis(gen) * h);
+          xrnd = myScale * (double(ix - 1) + dis(gen)) * hx;
+          yrnd = myScale * (double(iy - 1) + dis(gen)) * hy;
+          zrnd = myScale * (double(iz - 1) + dis(gen)) * hz;
 
-            outputFluidFile << myFluidBeadIndex << " " << typeFluid << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
-          }
+          outputFluidFile << myFluidBeadIndex << " " << (ivoxel+1) << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
         }
-        break;
-      default :
-        std::cout
-          << "\n Error: in file " << inputDataFileName << "\n"
-          << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
-          << "contains an invalid voxel value ...\n";
-        std::exit(0);
-        break;
+      }
+    }
+    else
+    {
+      std::cout
+        << "\n Error: in file " << inputDataFileName << "\n"
+        << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
+        << "contains an invalid voxel value ...\n";
+      std::exit(0);
     }
   }
   std::cout << "\n";
