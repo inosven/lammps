@@ -43,6 +43,7 @@ int main(int argc, char **argv)
   unsigned int roiNyLo, roiNyHi;
   unsigned int roiNzLo, roiNzHi;
 
+  const unsigned int numMaxTypes = 12;
   unsigned int numTypes = 0;
   unsigned int numSolidBeadsPerVoxel = 0;
   unsigned int numFluidBeadsPerVoxel = 0;
@@ -227,6 +228,16 @@ int main(int argc, char **argv)
   std::getline(controlFile,skipLine);
   controlFile >> numTypes; std::getline(controlFile,skipLine);
 
+  if (numTypes > numMaxTypes)
+  {
+    std::cout
+      << "\n" << "Fatal: in file " << controlFileName << "\n"
+      << "  numTypes = " << numTypes << "\n"
+      << "  is larger than\n"
+      << "  numMaxTypes = " << numMaxTypes << "\n";
+    std::exit(0);
+  }
+
   // Read whether to output solid
 
   std::getline(controlFile,skipLine);
@@ -333,7 +344,7 @@ int main(int argc, char **argv)
         numBeads      += numSolidBeadsPerVoxel;
       }
     }
-    else if (ivoxel < 12)
+    else if (ivoxel < numTypes)
     {
       numFluidVoxels ++;
       if (isROI)
@@ -344,7 +355,7 @@ int main(int argc, char **argv)
         numBeads      += numFluidBeadsPerVoxel;
       }
     }
-    else
+    else if (ivoxel >= numMaxTypes)
     {
       std::cout
         << "\n Error: in file " << inputDataFileName << "\n"
@@ -474,7 +485,7 @@ int main(int argc, char **argv)
         }
       }
     }
-    else if (ivoxel < 12)
+    else if (ivoxel < numTypes)
     {
       if (outputFluid)
       {
@@ -492,7 +503,7 @@ int main(int argc, char **argv)
         }
       }
     }
-    else
+    else if (ivoxel >= numMaxTypes)
     {
       std::cout
         << "\n Error: in file " << inputDataFileName << "\n"
