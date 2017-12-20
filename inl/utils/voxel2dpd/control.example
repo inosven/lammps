@@ -2,22 +2,22 @@
 1
 # myScale (> 0.0)
 1.0
-# h (physical length of unit resolution in nm)
-600.0
+# hx hy hz (physical length of unit resolution in nm)
+2.5 2.5 5.0
 # imgNx imgNy imgNz (resolution in three directions)
-993 960 969
+1760 2093 606
 # roiNxLo roiNxHi (default (same with imgNx): 0 0)
-201 800
+0 0
 # roiNyLo roiNyHi (default (same with imgNy): 0 0)
-201 800
+0 0
 # roiNzLo roiNzHi (default (same with imgNz): 0 0)
-201 800
+0 0
 # numVoxels
-137887977
+47967175
 # numSolidBeadsPerVoxel
-4
+1
 # numFluidBeadsPerVoxel
-3
+1
 # numTypes (default = 3)
 3
 # outputSolid
