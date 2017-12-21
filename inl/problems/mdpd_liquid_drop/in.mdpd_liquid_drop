@@ -1,0 +1,58 @@
+############### set variables for convenience
+variable        nThermo  equal round(1.0) #round(100.0)
+variable        nDump    equal round(1000.0)
+variable        nPreRun  equal round(100.0) #round(10000.0)
+variable        nProRun  equal round(20000.0)
+variable	nPad     equal round(5.0)
+
+############### set units, dimension and global boundary type
+units		lj
+dimension	3
+boundary	p p p
+neighbor	0.3 bin
+neigh_modify	every 1 delay 0 check yes
+
+############### set particle style
+atom_style	mdpd
+
+############### create geometry and give number of atom types
+lattice		fcc 4.0
+region		box block -10 10 -10 10 -10 10
+create_box	1 box
+region		regID_ini block -5 5 -5 5 -5 5
+create_atoms	1 region regID_ini
+
+############### define pair style and its interaction coefficients
+pair_style	hybrid/overlay mdpd/rhosum mdpd 1.0 1.0 9872598
+pair_coeff	1 1 mdpd/rhosum 0.75
+#pair_coeff	1 1 mdpd -15.0 25.0 4.5 1.0 0.75
+#pair_coeff	1 1 mdpd -21.0 25.0 4.5 1.0 0.75
+#pair_coeff	1 1 mdpd -26.0 25.0 4.5 1.0 0.75
+pair_coeff	1 1 mdpd -50.0 25.0 4.5 1.0 0.75
+mass		1 1.0
+
+############### store velocity in ghost atoms
+comm_modify	vel yes
+
+############### set time step size and integration method
+timestep	0.01
+fix		mvv all mvv/dpd
+#fix		nve all nve
+
+############### output thermodynamics every N timesteps
+thermo		${nThermo}
+#dump		1 all custom ${nDump} out.*.dump id type xs ys zs
+#dump_modify	1 pad ${nPad}
+
+############### run to system equilibrium
+run		${nPreRun}
+
+############### compute and output variable profiles
+#compute		cptID_prf all chunk/atom bin/3d x center 0.5 y center 0.5 z center 0.25
+
+############### output data profile
+#fix		fixID_prf all ave/chunk 1 5000 5000 &
+#		cptID_prf density/mass ave one file liquid_drop.profile
+
+############### production run
+#run		${nProRun}
