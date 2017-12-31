@@ -15,12 +15,6 @@ Open a MATLAB built-in GUI to look for image files.
     * Some specific image types are listed.
     * See help menu for all matlab recognized image types.
     * MultiSelect allows the user to select multiple images.
-
-Variables defined in the function
-     fileName: the actual name of the file, e.g. "example.jpg";
-               has class cell
-     pathName: the file path, e.g. "C:\Users\KaneJJ\Desktop\";
-               has class string
 %}
 [fileName, pathName, ~] =...
     uigetfile(...
@@ -30,8 +24,7 @@ Variables defined in the function
     );
 
 %{
-Determine the number of files to be processed.
-    * nFiles must be >= 0 and <= 2^16-1
+Determine the number of files to be processed; >= 0 and <= 2^16-1
 %}
 nFiles = uint16( size(fileName, 2) );
 
@@ -162,72 +155,88 @@ for i = 11 : CC.NumObjects
     end
 end
 
+msg = "Procedure";
+fprintf('\n%-60s', msg);
+msg = "  Time (sec)";
+fprintf('%-12s\n', msg);
+fprintf('############################################################');
+fprintf('  ##########\n');
+
 %{
-Obsolete
-
-Data = [];
-for i = 1 : 10
-    [R,C,Z] = ind2sub( size(BW3D), CC.PixelIdxList{Idx(i)} );
-    N = ones(size(R)) * i;
-    Data = [Data; [R,C,Z,N]];
-    msg = sprintf('Voxels of #%02d pore-network: %8d',i,size(N,1));
-    disp(msg);
-end
-
-for i = 11 : CC.NumObjects
-    [R,C,Z] = ind2sub( size(BW3D), CC.PixelIdxList{Idx(i)} );
-    N = ones(size(R)) * 11;
-    Data = [Data; [R,C,Z,N]];
-end
+Export pore voxels in text file
 %}
-
 tStart = cputime;
 outFileName = "vox_pore.txt";
-fprintf('Export file %s ... ', outFileName);
+msg = strcat("Export file ", outFileName);
+fprintf('%-60s', msg);
 fileID = fopen(outFileName,'w');
 for i = 1 : numVoxPore
     fprintf(fileID,'%g %g %g %g\n',VOX(i,1),VOX(i,2),VOX(i,3),VOX(i,4));
 end
 fclose(fileID);
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 
+%{
+Dilate the pore voxels with direct neighbor solid voxels
+%}
 tStart = cputime;
-fprintf('Dilate the pore voxels with direct neighbor solid voxels... ');
+msg = "Dilate the pore voxels with direct neighbor solid voxels";
+fprintf('%-60s', msg);
 DIL1 = imdilate(BW3D,true(3,3,3));
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 
+%{
+Get the surface wall voxels that encolse the pores
+%}
 tStart = cputime;
-fprintf('Get the surface wall voxels that encolse the pores... ');
+msg = "Get the surface wall voxels that encolse the pores";
+fprintf('%-60s', msg);
 SURF1 = DIL1 ~= BW3D;
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 clear DIL1
 
+%{
+Get the indices of all non-zero entries
+%}
 tStart = cputime;
-fprintf('Get the indices of all non-zero entries... ');
+msg = "Get the indices of all non-zero entries";
+fprintf('%-60s', msg);
 indSURF1 = find(SURF1);
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 clear SURF1
 
+%{
+Convert the non-zero entry indices to I,J,K indexing
+%}
 tStart = cputime;
-fprintf('Convert the non-zero entry indices to I,J,K indexing... ');
+msg = "Convert the non-zero entry indices to I,J,K indexing";
+fprintf('%-60s', msg);
 [R,C,Z] = ind2sub(size(BW3D),indSURF1);
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 clear BW3D indSURF1
 
+%{
+Append the boundary wall voxels into the pore voxel matrix
+%}
 tStart = cputime;
-fprintf('Append the boundary wall voxels into the pore voxel matrix... ');
+msg = "Append the boundary wall voxels into the pore voxel matrix";
+fprintf('%-60s', msg);
 VOX = [[R,C,Z,zeros(size(R))]; VOX];
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 
+%{
+Export boundary wall voxels and pore voxels in text file
+%}
 tStart = cputime;
 outFileName = "vox_wall_pore.txt";
-fprintf('Export file %s ... ', outFileName);
+msg = strcat("Export file ", outFileName);
+fprintf('%-60s', msg);
 fileID = fopen(outFileName,'w');
 numVoxWallPore = size(VOX,1);
 for i = 1 : numVoxWallPore
@@ -235,7 +244,7 @@ for i = 1 : numVoxWallPore
 end
 fclose(fileID);
 tElapsed = cputime - tStart;
-fprintf('CPU time = %.3f\n', tElapsed);
+fprintf('  %.3f\n', tElapsed);
 
 %Dil2 = imdilate(Dil1,true(3,3,3));
 %Surf2=Dil2~=Dil1;
