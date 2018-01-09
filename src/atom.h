@@ -98,6 +98,7 @@ class Atom : protected Pointers {
   double *duChem;
   double *dpdTheta;
   int nspecies_dpd;
+  int *ssaAIR; // Shardlow Splitting Algorithm Active Interaction Region number
 
   // USER-MESO package
 
@@ -105,6 +106,7 @@ class Atom : protected Pointers {
   double *edpd_temp,*edpd_flux;  // temperature and heat flux
   double *edpd_cv;               // heat capacity
   int cc_species;
+  double *phi, **nw;
 
   // molecular info
 

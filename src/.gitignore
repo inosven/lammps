@@ -70,6 +70,8 @@
 /atom_vec_edpd.h
 /atom_vec_mdpd.cpp
 /atom_vec_mdpd.h
+/atom_vec_mdpdsolidwall.cpp
+/atom_vec_mdpdsolidwall.h
 /atom_vec_tdpd.cpp
 /atom_vec_tdpd.h
 /compute_edpd_temp_atom.cpp
@@ -82,16 +84,22 @@
 /fix_mvv_dpd.h
 /fix_mvv_edpd.cpp
 /fix_mvv_edpd.h
+/fix_mvv_mdpd.cpp
+/fix_mvv_mdpd.h
 /fix_mvv_tdpd.cpp
 /fix_mvv_tdpd.h
 /fix_tdpd_source.cpp
 /fix_tdpd_source.h
+/fix_solidwall_mdpd.cpp
+/fix_solidwall_mdpd.h
 /pair_edpd.cpp
 /pair_edpd.h
 /pair_mdpd.cpp
 /pair_mdpd.h
 /pair_mdpd_rhosum.cpp
 /pair_mdpd_rhosum.h
+/pair_mdpdsolidwall.cpp
+/pair_mdpdsolidwall.h
 /pair_tdpd.cpp
 /pair_tdpd.h
 

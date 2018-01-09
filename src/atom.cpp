@@ -105,11 +105,14 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   uCond = uMech = uChem = uCG = uCGnew = NULL;
   duChem = NULL;
   dpdTheta = NULL;
+  ssaAIR = NULL;
 
   // USER-MESO
 
   cc = cc_flux = NULL;
   edpd_temp = edpd_flux = edpd_cv = NULL;
+  phi = NULL;
+  nw = NULL;
 
   // USER-SMD
 
@@ -313,12 +316,15 @@ Atom::~Atom()
   memory->destroy(uCG);
   memory->destroy(uCGnew);
   memory->destroy(duChem);
+  memory->destroy(ssaAIR);
 
   memory->destroy(cc);
   memory->destroy(cc_flux);
   memory->destroy(edpd_temp);
   memory->destroy(edpd_flux);
   memory->destroy(edpd_cv);
+  memory->destroy(phi);
+  memory->destroy(nw);
 
   memory->destroy(nspecial);
   memory->destroy(special);
