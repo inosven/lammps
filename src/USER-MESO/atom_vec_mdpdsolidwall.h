@@ -71,6 +71,7 @@ class AtomVecMDPDSolidWall : public AtomVec {
   double **x,**v,**f;
   double *rho,*phi,**nw;
   double **vest; // estimated velocity during force computation
+  double **fest; // estimated force during force computation
 };
 
 }

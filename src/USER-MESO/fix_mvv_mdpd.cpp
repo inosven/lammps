@@ -77,6 +77,7 @@ void FixMvvMDPD::initial_integrate(int vflag)
   double **v = atom->v;
   double **f = atom->f;
   double **vest = atom->vest;
+  double **fest = atom->fest;
   double *mass = atom->mass;
   int *type = atom->type;
   int *mask = atom->mask;
@@ -86,12 +87,18 @@ void FixMvvMDPD::initial_integrate(int vflag)
   for (int i = 0; i < nlocal; i++)
   if (mask[i] & groupbit) {
     dtfm = dtf / mass[type[i]];
-    for(int k = 0; k < 3; k++){
-      vest[i][k] = v[i][k];
-      vest[i][k+3] = f[i][k];
-      x[i][k] += dtv * (v[i][k] + dtfm * f[i][k]);
-      v[i][k] += 2.0 * verlet * dtfm * f[i][k];
-    }
+    vest[i][0] = v[i][0];
+    vest[i][1] = v[i][1];
+    vest[i][2] = v[i][2];
+    fest[i][0] = f[i][0];
+    fest[i][1] = f[i][1];
+    fest[i][2] = f[i][2];
+    x[i][0] += dtv * (v[i][0] + dtfm * f[i][0]);
+    x[i][1] += dtv * (v[i][1] + dtfm * f[i][1]);
+    x[i][2] += dtv * (v[i][2] + dtfm * f[i][2]);
+    v[i][0] += 2.0 * verlet * dtfm * f[i][0];
+    v[i][1] += 2.0 * verlet * dtfm * f[i][1];
+    v[i][2] += 2.0 * verlet * dtfm * f[i][2];
   }
 }
 
@@ -103,6 +110,7 @@ void FixMvvMDPD::final_integrate()
   double **v = atom->v;
   double **f = atom->f;
   double **vest = atom->vest;
+  double **fest = atom->fest;
   double *mass = atom->mass;
   int *type = atom->type;
   int *mask = atom->mask;
@@ -112,9 +120,9 @@ void FixMvvMDPD::final_integrate()
   for (int i = 0; i < nlocal; i++)
   if (mask[i] & groupbit) {
     dtfm = dtf / mass[type[i]];
-    v[i][0] += dtfm * ((1.0-2.0*verlet)*vest[i][3] + f[i][0]);
-    v[i][1] += dtfm * ((1.0-2.0*verlet)*vest[i][4] + f[i][1]);
-    v[i][2] += dtfm * ((1.0-2.0*verlet)*vest[i][5] + f[i][2]);
+    v[i][0] += dtfm * ((1.0 - 2.0 * verlet) * fest[i][0] + f[i][0]);
+    v[i][1] += dtfm * ((1.0 - 2.0 * verlet) * fest[i][1] + f[i][1]);
+    v[i][2] += dtfm * ((1.0 - 2.0 * verlet) * fest[i][2] + f[i][2]);
   }
 }
 

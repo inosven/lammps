@@ -45,9 +45,9 @@ AtomVecMDPDSolidWall::AtomVecMDPDSolidWall(LAMMPS *lmp) : AtomVec(lmp)
   comm_x_only = comm_f_only = 0;
   comm->ghost_velocity = 1;
 
-  size_forward = 3 + 8; // 3 + rho + phi + vest[6]
+  size_forward = 3 + 8; // 3 + rho + phi + vest[3] + fest[3]
   size_reverse = 3;     // 3
-  size_border =  6 + 8; // 6 + rho + phi + vest[6]
+  size_border =  6 + 8; // 6 + rho + phi + vest[3] + fest[3]
   size_velocity = 3;
   size_data_atom = 5;
   size_data_vel = 4;
@@ -55,6 +55,7 @@ AtomVecMDPDSolidWall::AtomVecMDPDSolidWall(LAMMPS *lmp) : AtomVec(lmp)
 
   atom->rho_flag = 1;
   atom->vest_flag = 1;
+  atom->fest_flag = 1;
 }
 
 /* ----------------------------------------------------------------------
@@ -82,7 +83,8 @@ void AtomVecMDPDSolidWall::grow(int n)
   rho = memory->grow(atom->rho, nmax*comm->nthreads, "atom:rho");
   phi = memory->grow(atom->phi, nmax*comm->nthreads, "atom:phi");
   nw = memory->grow(atom->nw, nmax*comm->nthreads, 3, "atom:nw");
-  vest = memory->grow(atom->vest, nmax, 6, "atom:vest");
+  vest = memory->grow(atom->vest, nmax, 3, "atom:vest");
+  fest = memory->grow(atom->fest, nmax, 3, "atom:fest");
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -105,6 +107,7 @@ void AtomVecMDPDSolidWall::grow_reset() {
   phi = atom->phi;
   nw = atom->nw;
   vest = atom->vest;
+  fest = atom->fest;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -123,12 +126,15 @@ void AtomVecMDPDSolidWall::copy(int i, int j, int delflag) {
 
   rho[j] = rho[i];
   phi[j] = phi[i];
-  for(int k = 0; k < 3; k++)
-  {
-    nw[j][k] = nw[i][k];
-    vest[j][k] = vest[i][k];
-    vest[j][k+3] = vest[i][k+3];
-  }
+  nw[j][0] = nw[i][0];
+  nw[j][1] = nw[i][1];
+  nw[j][2] = nw[i][2];
+  vest[j][0] = vest[i][0];
+  vest[j][1] = vest[i][1];
+  vest[j][2] = vest[i][2];
+  fest[j][0] = fest[i][0];
+  fest[j][1] = fest[i][1];
+  fest[j][2] = fest[i][2];
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -151,8 +157,12 @@ int AtomVecMDPDSolidWall::pack_comm_hybrid(int n, int *list, double *buf) {
     j = list[i];
     buf[m++] = rho[j];
     buf[m++] = phi[j];
-    for(int k = 0; k < 6; k++)
-      buf[m++] = vest[j][k];
+    buf[m++] = vest[j][0];
+    buf[m++] = vest[j][1];
+    buf[m++] = vest[j][2];
+    buf[m++] = fest[j][0];
+    buf[m++] = fest[j][1];
+    buf[m++] = fest[j][2];
   }
   return m;
 }
@@ -167,8 +177,12 @@ int AtomVecMDPDSolidWall::unpack_comm_hybrid(int n, int first, double *buf) {
   for (i = first; i < last; i++) {
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
   return m;
 }
@@ -183,8 +197,12 @@ int AtomVecMDPDSolidWall::pack_border_hybrid(int n, int *list, double *buf) {
     j = list[i];
     buf[m++] = rho[j];
     buf[m++] = phi[j];
-    for(int k = 0; k < 6; k++)
-      buf[m++] = vest[j][k];
+    buf[m++] = vest[j][0];
+    buf[m++] = vest[j][1];
+    buf[m++] = vest[j][2];
+    buf[m++] = fest[j][0];
+    buf[m++] = fest[j][1];
+    buf[m++] = fest[j][2];
   }
   return m;
 }
@@ -199,8 +217,12 @@ int AtomVecMDPDSolidWall::unpack_border_hybrid(int n, int first, double *buf) {
   for (i = first; i < last; i++) {
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
   return m;
 }
@@ -234,8 +256,12 @@ int AtomVecMDPDSolidWall::pack_comm(int n, int *list, double *buf, int pbc_flag,
       buf[m++] = x[j][2];
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -254,8 +280,12 @@ int AtomVecMDPDSolidWall::pack_comm(int n, int *list, double *buf, int pbc_flag,
       buf[m++] = x[j][2] + dz;
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   }
   return m;
@@ -279,8 +309,12 @@ int AtomVecMDPDSolidWall::pack_comm_vel(int n, int *list, double *buf, int pbc_f
       buf[m++] = v[j][2];
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -302,8 +336,12 @@ int AtomVecMDPDSolidWall::pack_comm_vel(int n, int *list, double *buf, int pbc_f
       buf[m++] = v[j][2];
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   }
   return m;
@@ -322,8 +360,12 @@ void AtomVecMDPDSolidWall::unpack_comm(int n, int first, double *buf) {
     x[i][2] = buf[m++];
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
 }
 
@@ -343,8 +385,12 @@ void AtomVecMDPDSolidWall::unpack_comm_vel(int n, int first, double *buf) {
     v[i][2] = buf[m++];
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
 }
 
@@ -395,8 +441,12 @@ int AtomVecMDPDSolidWall::pack_border(int n, int *list, double *buf, int pbc_fla
       buf[m++] = ubuf(mask[j]).d;
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -418,8 +468,12 @@ int AtomVecMDPDSolidWall::pack_border(int n, int *list, double *buf, int pbc_fla
       buf[m++] = ubuf(mask[j]).d;
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   }
 
@@ -452,8 +506,12 @@ int AtomVecMDPDSolidWall::pack_border_vel(int n, int *list, double *buf, int pbc
       buf[m++] = v[j][2];
       buf[m++] = rho[j];
       buf[m++] = phi[j];
-      for(int k = 0; k < 6; k++)
-        buf[m++] = vest[j][k];
+      buf[m++] = vest[j][0];
+      buf[m++] = vest[j][1];
+      buf[m++] = vest[j][2];
+      buf[m++] = fest[j][0];
+      buf[m++] = fest[j][1];
+      buf[m++] = fest[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -479,8 +537,12 @@ int AtomVecMDPDSolidWall::pack_border_vel(int n, int *list, double *buf, int pbc
         buf[m++] = v[j][2];
         buf[m++] = rho[j];
         buf[m++] = phi[j];
-        for(int k = 0; k < 6; k++)
-          buf[m++] = vest[j][k];
+        buf[m++] = vest[j][0];
+        buf[m++] = vest[j][1];
+        buf[m++] = vest[j][2];
+        buf[m++] = fest[j][0];
+        buf[m++] = fest[j][1];
+        buf[m++] = fest[j][2];
       }
     } else {
       dvx = pbc[0] * h_rate[0] + pbc[5] * h_rate[5] + pbc[4] * h_rate[4];
@@ -509,8 +571,12 @@ int AtomVecMDPDSolidWall::pack_border_vel(int n, int *list, double *buf, int pbc
           buf[m++] = v[j][2];
           buf[m++] = rho[j];
           buf[m++] = phi[j];
-          for(int k = 0; k < 6; k++)
-            buf[m++] = vest[j][k];
+          buf[m++] = vest[j][0];
+          buf[m++] = vest[j][1];
+          buf[m++] = vest[j][2];
+          buf[m++] = fest[j][0];
+          buf[m++] = fest[j][1];
+          buf[m++] = fest[j][2];
         }
       }
     }
@@ -541,8 +607,12 @@ void AtomVecMDPDSolidWall::unpack_border(int n, int first, double *buf) {
     mask[i] = (int) ubuf(buf[m++]).i;
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
 
   if (atom->nextra_border)
@@ -572,8 +642,12 @@ void AtomVecMDPDSolidWall::unpack_border_vel(int n, int first, double *buf) {
     v[i][2] = buf[m++];
     rho[i] = buf[m++];
     phi[i] = buf[m++];
-    for(int k = 0; k < 6; k++)
-      vest[i][k] = buf[m++];
+    vest[i][0] = buf[m++];
+    vest[i][1] = buf[m++];
+    vest[i][2] = buf[m++];
+    fest[i][0] = buf[m++];
+    fest[i][1] = buf[m++];
+    fest[i][2] = buf[m++];
   }
 
   if (atom->nextra_border)
@@ -601,8 +675,12 @@ int AtomVecMDPDSolidWall::pack_exchange(int i, double *buf) {
   buf[m++] = ubuf(image[i]).d;
   buf[m++] = rho[i];
   buf[m++] = phi[i];
-  for(int k = 0; k < 6; k++)
-    buf[m++] = vest[i][k];
+  buf[m++] = vest[i][0];
+  buf[m++] = vest[i][1];
+  buf[m++] = vest[i][2];
+  buf[m++] = fest[i][0];
+  buf[m++] = fest[i][1];
+  buf[m++] = fest[i][2];
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -632,8 +710,12 @@ int AtomVecMDPDSolidWall::unpack_exchange(double *buf) {
   image[nlocal] = (imageint) ubuf(buf[m++]).i;
   rho[nlocal] = buf[m++];
   phi[nlocal] = buf[m++];
-  for(int k = 0; k < 6; k++)
-    vest[nlocal][k] = buf[m++];
+  vest[nlocal][0] = buf[m++];
+  vest[nlocal][1] = buf[m++];
+  vest[nlocal][2] = buf[m++];
+  fest[nlocal][0] = buf[m++];
+  fest[nlocal][1] = buf[m++];
+  fest[nlocal][2] = buf[m++];
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -652,7 +734,7 @@ int AtomVecMDPDSolidWall::size_restart() {
   int i;
 
   int nlocal = atom->nlocal;
-  int n = 19 * nlocal; // 11 + rho + phi + vest[6]
+  int n = 19 * nlocal; // 11 + rho + phi + vest[3] + fest[3]
 
   if (atom->nextra_restart)
     for (int iextra = 0; iextra < atom->nextra_restart; iextra++)
@@ -682,8 +764,12 @@ int AtomVecMDPDSolidWall::pack_restart(int i, double *buf) {
   buf[m++] = v[i][2];
   buf[m++] = rho[i];
   buf[m++] = phi[i];
-  for(int k = 0; k < 6; k++)
-    buf[m++] = vest[i][k];
+  buf[m++] = vest[i][0];
+  buf[m++] = vest[i][1];
+  buf[m++] = vest[i][2];
+  buf[m++] = fest[i][0];
+  buf[m++] = fest[i][1];
+  buf[m++] = fest[i][2];
 
   if (atom->nextra_restart)
     for (int iextra = 0; iextra < atom->nextra_restart; iextra++)
@@ -718,8 +804,12 @@ int AtomVecMDPDSolidWall::unpack_restart(double *buf) {
   v[nlocal][2] = buf[m++];
   rho[nlocal] = buf[m++];
   phi[nlocal] = buf[m++];
-  for(int k = 0; k < 6; k++)
-    vest[nlocal][k] = buf[m++];
+  vest[nlocal][0] = buf[m++];
+  vest[nlocal][1] = buf[m++];
+  vest[nlocal][2] = buf[m++];
+  fest[nlocal][0] = buf[m++];
+  fest[nlocal][1] = buf[m++];
+  fest[nlocal][2] = buf[m++];
 
   double **extra = atom->extra;
   if (atom->nextra_store) {
@@ -755,11 +845,15 @@ void AtomVecMDPDSolidWall::create_atom(int itype, double *coord) {
   v[nlocal][2] = 0.0;
   rho[nlocal] = 0.0;
   phi[nlocal] = 0.0;
-  for(int k = 0; k < 3; k++){
-    nw[nlocal][k] = 0.0;
-    vest[nlocal][k] = 0.0;
-    vest[nlocal][k+3] = 0.0;
-  }
+  nw[nlocal][0] = 0.0;
+  nw[nlocal][1] = 0.0;
+  nw[nlocal][2] = 0.0;
+  vest[nlocal][0] = 0.0;
+  vest[nlocal][1] = 0.0;
+  vest[nlocal][2] = 0.0;
+  fest[nlocal][0] = 0.0;
+  fest[nlocal][1] = 0.0;
+  fest[nlocal][2] = 0.0;
 
   atom->nlocal++;
 }
@@ -789,14 +883,17 @@ void AtomVecMDPDSolidWall::data_atom(double *coord, imageint imagetmp, char **va
   v[nlocal][1] = 0.0;
   v[nlocal][2] = 0.0;
 
-  for(int k = 0; k < 6; k++)
-    vest[nlocal][k] = 0.0;
-
   rho[nlocal] = 0.0;
   phi[nlocal] = 0.0;
   nw[nlocal][0] = 0.0;
   nw[nlocal][0] = 0.0;
   nw[nlocal][0] = 0.0;
+  vest[nlocal][0] = 0.0;
+  vest[nlocal][1] = 0.0;
+  vest[nlocal][2] = 0.0;
+  fest[nlocal][0] = 0.0;
+  fest[nlocal][1] = 0.0;
+  fest[nlocal][2] = 0.0;
 
   atom->nlocal++;
 }
@@ -915,8 +1012,9 @@ bigint AtomVecMDPDSolidWall::memory_usage() {
   if (atom->memcheck("f"))       bytes += memory->usage(f, nmax*comm->nthreads, 3);
   if (atom->memcheck("rho"))     bytes += memory->usage(rho, nmax*comm->nthreads);
   if (atom->memcheck("phi"))     bytes += memory->usage(phi, nmax*comm->nthreads);
-  if (atom->memcheck("nw"))    bytes += memory->usage(nw, nmax*comm->nthreads, 3);
-  if (atom->memcheck("vest"))    bytes += memory->usage(vest, nmax, 6);
+  if (atom->memcheck("nw"))      bytes += memory->usage(nw, nmax*comm->nthreads, 3);
+  if (atom->memcheck("vest"))    bytes += memory->usage(vest, nmax, 3);
+  if (atom->memcheck("fest"))    bytes += memory->usage(fest, nmax, 3);
 
   return bytes;
 }

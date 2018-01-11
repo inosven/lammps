@@ -95,6 +95,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
 
   rho = drho = e = de = cv = NULL;
   vest = NULL;
+  fest = NULL;
 
   // SPIN package
 
@@ -181,7 +182,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   spin_flag = eradius_flag = ervel_flag = erforce_flag = ervelforce_flag = 0;
   cs_flag = csforce_flag = vforce_flag = etag_flag = 0;
 
-  rho_flag = e_flag = cv_flag = vest_flag = 0;
+  rho_flag = e_flag = cv_flag = vest_flag = fest_flag = 0;
   dpd_flag = edpd_flag = tdpd_flag = 0;
 
   // USER-SMD
@@ -325,6 +326,7 @@ Atom::~Atom()
   memory->destroy(edpd_cv);
   memory->destroy(phi);
   memory->destroy(nw);
+  memory->destroy(fest);
 
   memory->destroy(nspecial);
   memory->destroy(special);
@@ -444,7 +446,7 @@ void Atom::create_avec(const char *style, int narg, char **arg, int trysuffix)
   spin_flag = eradius_flag = ervel_flag = erforce_flag = ervelforce_flag = 0;
   cs_flag = csforce_flag = vforce_flag = etag_flag = 0;
 
-  rho_flag = e_flag = cv_flag = vest_flag = 0;
+  rho_flag = e_flag = cv_flag = vest_flag = fest_flag = 0;
 
   // create instance of AtomVec
   // use grow() to initialize atom-based arrays to length 1
@@ -2220,6 +2222,7 @@ void *Atom::extract(char *name)
   if (strcmp(name,"de") == 0) return (void *) de;
   if (strcmp(name,"cv") == 0) return (void *) cv;
   if (strcmp(name,"vest") == 0) return (void *) vest;
+  if (strcmp(name,"fest") == 0) return (void *) fest;
 
   if (strcmp(name, "contact_radius") == 0) return (void *) contact_radius;
   if (strcmp(name, "smd_data_9") == 0) return (void *) smd_data_9;
