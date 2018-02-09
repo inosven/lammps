@@ -886,8 +886,8 @@ void AtomVecMDPDSolidWall::data_atom(double *coord, imageint imagetmp, char **va
   rho[nlocal] = 0.0;
   phi[nlocal] = 0.0;
   nw[nlocal][0] = 0.0;
-  nw[nlocal][0] = 0.0;
-  nw[nlocal][0] = 0.0;
+  nw[nlocal][1] = 0.0;
+  nw[nlocal][2] = 0.0;
   vest[nlocal][0] = 0.0;
   vest[nlocal][1] = 0.0;
   vest[nlocal][2] = 0.0;
@@ -918,14 +918,12 @@ void AtomVecMDPDSolidWall::pack_data(double **buf)
   for (int i = 0; i < nlocal; i++) {
     buf[i][0] = ubuf(tag[i]).d;
     buf[i][1] = ubuf(type[i]).d;
-    buf[i][2] = rho[i];
-    buf[i][3] = phi[i];
-    buf[i][4] = x[i][0];
-    buf[i][5] = x[i][1];
-    buf[i][6] = x[i][2];
-    buf[i][7] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
-    buf[i][8] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
-    buf[i][9] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
+    buf[i][2] = x[i][0];
+    buf[i][3] = x[i][1];
+    buf[i][4] = x[i][2];
+    buf[i][5] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
+    buf[i][6] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
+    buf[i][7] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
   }
 }
 
@@ -947,12 +945,11 @@ void AtomVecMDPDSolidWall::write_data(FILE *fp, int n, double **buf)
 {
   for (int i = 0; i < n; i++)
     fprintf(fp,TAGINT_FORMAT
-            " %d %-1.16e %-1.16e %-1.16e %-1.16e %-1.16e "
-            "%d %d %d\n",
+            " %d %-1.16e %-1.16e %-1.16e %d %d %d\n",
             (tagint) ubuf(buf[i][0]).i,(int) ubuf(buf[i][1]).i,
-            buf[i][2],buf[i][3],buf[i][4],buf[i][5],buf[i][6],
-            (int) ubuf(buf[i][7]).i,(int) ubuf(buf[i][8]).i,
-            (int) ubuf(buf[i][9]).i);
+            buf[i][2],buf[i][3],buf[i][4],
+            (int) ubuf(buf[i][5]).i,(int) ubuf(buf[i][6]).i,
+            (int) ubuf(buf[i][7]).i);
 }
 
 /* ----------------------------------------------------------------------
