@@ -5,8 +5,8 @@ CFLAGS = -O3 -Wall -Wno-unused-result
 CFLAGS += -std=c++0x
 
 ####Source files
-EXE = voxel2dpd
-OBJ = voxel2dpd.o
+EXE = vox2dpd
+OBJ = vox2dpd.o
 
 ####Executable
 VOXCEL2ATOM:$(EXE)
