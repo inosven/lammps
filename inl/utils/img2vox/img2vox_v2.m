@@ -152,13 +152,13 @@ for ii = 1 : nRegions
 
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.info.txt']];
     fileID = fopen(outFileName,'w');
-    fprintf(fileID,'numVoxWall\n%g\n',numVoxWall);
-    fprintf(fileID,'Rmin Rmax Cmin Cmax Zmin Zmax\n%g %g %g %g %g %g\n',...
+    fprintf(fileID,'numVoxWall\n%d\n',numVoxWall);
+    fprintf(fileID,'Rmin Rmax Cmin Cmax Zmin Zmax\n%d %d %d %d %d %d\n',...
         min(R_wall),max(R_wall),...
         min(C_wall),max(C_wall),...
         min(Z_wall),max(Z_wall));
-    fprintf(fileID,'numVoxPore\n%g\n',numVoxPore);
-    fprintf(fileID,'Rmin Rmax Cmin Cmax Zmin Zmax\n%g %g %g %g %g %g\n',...
+    fprintf(fileID,'numVoxPore\n%d\n',numVoxPore);
+    fprintf(fileID,'Rmin Rmax Cmin Cmax Zmin Zmax\n%d %d %d %d %d %d\n',...
         min(R_pore),max(R_pore),...
         min(C_pore),max(C_pore),...
         min(Z_pore),max(Z_pore));
@@ -167,14 +167,14 @@ for ii = 1 : nRegions
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.pore.txt']];
     fileID = fopen(outFileName,'w');
     for i = 1 : numVoxPore
-        fprintf(fileID,'%g %g %g\n',PORE(i,1),PORE(i,2),PORE(i,3));
+        fprintf(fileID,'%d %d %d\n',PORE(i,1),PORE(i,2),PORE(i,3));
     end
     fclose(fileID);
 
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.wall.txt']];
     fileID = fopen(outFileName,'w');
     for i = 1 : numVoxWall
-        fprintf(fileID,'%g %g %g\n',WALL(i,1),WALL(i,2),WALL(i,3));
+        fprintf(fileID,'%d %d %d\n',WALL(i,1),WALL(i,2),WALL(i,3));
     end
     fclose(fileID);
 
