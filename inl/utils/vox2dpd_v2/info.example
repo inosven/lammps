@@ -1,0 +1,8 @@
+numVoxWall
+3415551
+Rmin Rmax Cmin Cmax Zmin Zmax
+1 589 169 930 315 608
+numVoxPore
+9331064
+Rmin Rmax Cmin Cmax Zmin Zmax
+2 588 170 929 316 607
