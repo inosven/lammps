@@ -1,12 +1,16 @@
 # flow direction (0 = default;1 = x; 2 = y; 3 = z)
-3
-# cropLo cropHi (bound of percentage for region cropping in flow direction)
-30 99
+  1
+# cropXlo cropXhi (in %)
+  30      70
+# cropYlo cropYhi (in %)
+  30      70
+# cropZLo cropZHi (in %)
+  50      90
 # hx hy hz (scaling coefficient in each direction)
-1 1 2
+  1  1  2
 # nSolidsPerLattice nFluidsPerLattice
-8 6
+  4                 1
 # nTypes (default = 3)
-3
+  3
 # outSolid? outFluid?
-1 0
+  1         0

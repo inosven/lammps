@@ -5,14 +5,6 @@
 #include <time.h>
 #include <vector>
 
-//struct _t {
-//  int    *  type;
-//  int    ** flag;
-//  bool   *  wall;
-//  double ** x;
-//};
-
-
 void print_message()
 {
   std::cout << "\n";
@@ -44,10 +36,13 @@ int main(int argc, char **argv)
   unsigned int typeVoid = 0;
   unsigned int typeWall = 1;
   unsigned int typePore = 2;
+  unsigned int typeWallKeep = 111;
 
   unsigned long ix,iy,iz;
 
-  unsigned int cropLo = 0, cropHi = 0;
+  unsigned int cropXlo = 0, cropXhi = 100;
+  unsigned int cropYlo = 0, cropYhi = 100;
+  unsigned int cropZlo = 0, cropZhi = 100;
 
   const unsigned long nMaxTypes = 12;
   unsigned long nTypes = 0;
@@ -116,17 +111,36 @@ int main(int argc, char **argv)
   // Read the lower and higher bounds for region cropping
 
   std::getline(ctrlFile,skipLine);
-  ctrlFile >> cropLo >> cropHi; std::getline(ctrlFile,skipLine);
+  ctrlFile >> cropXlo >> cropXhi; std::getline(ctrlFile,skipLine);
+  std::getline(ctrlFile,skipLine);
+  ctrlFile >> cropYlo >> cropYhi; std::getline(ctrlFile,skipLine);
+  std::getline(ctrlFile,skipLine);
+  ctrlFile >> cropZlo >> cropZhi; std::getline(ctrlFile,skipLine);
 
-  if (cropLo >= cropHi || cropHi > 100)
+  if (cropXlo <= 0 || cropXhi >= 100)
   {
     std::cout
       << "\n" << "Fatal: in file " << ctrlFileName
-      << " cropLo = " << cropLo << ", "
-      << " cropHi = " << cropHi << "\n";
+      << " cropXlo = " << cropXlo << ", "
+      << " cropXhi = " << cropXhi << "\n";
     std::exit(0);
   }
-
+  if (cropYlo <= 0 || cropYhi >= 100)
+  {
+    std::cout
+      << "\n" << "Fatal: in file " << ctrlFileName
+      << " cropYlo = " << cropYlo << ", "
+      << " cropYhi = " << cropYhi << "\n";
+    std::exit(0);
+  }
+  if (cropZlo <= 0 || cropZhi >= 100)
+  {
+    std::cout
+      << "\n" << "Fatal: in file " << ctrlFileName
+      << " cropZlo = " << cropZlo << ", "
+      << " cropZhi = " << cropZhi << "\n";
+    std::exit(0);
+  }
 
   // Read the scaling coefficient in each direction
 
@@ -234,36 +248,14 @@ int main(int argc, char **argv)
   // Display on screen and check
   // ===========================
 
-  unsigned long xlo = 0;
-  unsigned long ylo = 0;
-  unsigned long zlo = 0;
-  unsigned long xhi = nxLattice;
-  unsigned long yhi = nyLattice;
-  unsigned long zhi = nzLattice;
+  unsigned long xlo = nxVox * cropXlo / 100; xlo = xlo * hx;
+  unsigned long xhi = nxVox * cropXhi / 100; xhi = xhi * hx;
 
-  switch ( flowDirection )
-  {
-    case 0:
-      break;
+  unsigned long ylo = nyVox * cropYlo / 100; ylo = ylo * hy;
+  unsigned long yhi = nyVox * cropYhi / 100; yhi = yhi * hy;
 
-    case 1:
-
-      xlo = nxVox * cropLo / 100; xlo = xlo * hx;
-      xhi = nxVox * cropHi / 100; xhi = xhi * hx;
-      break;
-
-    case 2:
-
-      ylo = nyVox * cropLo / 100; ylo = ylo * hy;
-      yhi = nyVox * cropHi / 100; yhi = yhi * hy;
-      break;
-
-    case 3:
-
-      zlo = nzVox * cropLo / 100; zlo = zlo * hz;
-      zhi = nzVox * cropHi / 100; zhi = zhi * hz;
-      break;
-  }
+  unsigned long zlo = nzVox * cropZlo / 100; zlo = zlo * hz;
+  unsigned long zhi = nzVox * cropZhi / 100; zhi = zhi * hz;
 
   unsigned long numSolidLattice = numSolidVox * hx * hy * hz;
   unsigned long numFluidLattice = numFluidVox * hx * hy * hz;
@@ -406,329 +398,193 @@ int main(int argc, char **argv)
 
   inpFluidFile.close();
 
-  // ==========================================================
-  // At the two region boundaries normal to the flow direction,
-  // replace previously added wall voxels with void voxels,
-  // and replace original void voxels with wall voxels.
-  // So fluid flow can be contained only in pore network.
-  // ==========================================================
+  // =========================================================================
+  // Find the total numbers of solid and fluid particles in the cropped region
+  // =========================================================================
 
-  switch ( flowDirection )
+  for (unsigned long i = (xlo+1); i <= xhi; i++)
+    for (unsigned long j = (ylo+1); j <= yhi; j++)
+      for (unsigned long k = (zlo+1); k <= zhi; k++)
+      {
+        if ((i == (xlo+1)) || (i == xhi) || (j == (ylo+1)) || (j == yhi) || (k == (zlo+1)) || (k == zhi))
+        {
+          if (LATTICE[i][j][k] == typeWall)
+          {
+            LATTICE[i][j][k] = typeWallKeep;
+            numSolidBeads += nSolidsPerLattice;
+          }
+          else if (LATTICE[i][j][k] == typePore)
+          {
+            LATTICE[i][j][k] = typeWall;
+            numSolidBeads += nSolidsPerLattice;
+          }
+        }
+        else
+        {
+          if (LATTICE[i][j][k] == typeWall)
+          {
+            bool fillSolids = false;
+
+            for (unsigned long ii = i-1; ii <= (i+1); ii++)
+            {
+              for (unsigned long jj = j-1; jj <= (j+1); jj++)
+              {
+                for (unsigned long kk = k-1; kk <= (k+1); kk++)
+                {
+                  if(LATTICE[ii][jj][kk] == typePore)
+                  {
+                    fillSolids = true;
+                    numSolidBeads += nSolidsPerLattice;
+                    break;
+                  }
+                }
+                if (fillSolids) break;
+              }
+              if (fillSolids) break;
+            }
+
+            if (!fillSolids)
+              LATTICE[i][j][k] = typeVoid;
+          }
+          else if (LATTICE[i][j][k] == typePore)
+            numFluidBeads += nFluidsPerLattice;
+        }
+      }
+
+  if (flowDirection == 0)
   {
-    // In all 6 boundary planes: convert wall voxels to void voxels
-    case 0:
+  }
+  else if (flowDirection == 1)
+  {
+    for (unsigned long j = (ylo+1); j <= yhi; j++)
+      for (unsigned long k = (zlo+1); k <= zhi; k++)
+      {
+        unsigned long i;
 
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
+        i = xlo+1;
 
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      numSolidBeads += nSolidsPerLattice;
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if (LATTICE[i][j][k] == typePore)
-              numFluidBeads += nFluidsPerLattice;
-          }
-
-      break;
-
-    // In xlo and xhi planes:
-    //   * switch over between wall voxels <--> void voxels;
-    //   * count solid particle numbers in the region boundary voxels.
-    case 1:
-
-      for (unsigned long j = 1; j <= nyLattice; j++)
-        for (unsigned long k = 1; k <= nzLattice; k++)
+        if (LATTICE[i][j][k] == typeWall)
         {
-          for (unsigned long i = 1; i <= hx; i++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (i == hx) numSolidBeads += nSolidsPerLattice;
-            }
-          }
-
-          for (unsigned long i = (nxLattice-hx+1); i <= nxLattice; i++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (i == (nxLattice-hx+1)) numSolidBeads += nSolidsPerLattice;
-            }
-          }
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
+        }
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
         }
 
-      for (unsigned long i = (hx+1); i <= (nxLattice-hx); i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
+        i = xhi;
 
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      numSolidBeads += nSolidsPerLattice;
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if (LATTICE[i][j][k] == typePore)
-              numFluidBeads += nFluidsPerLattice;
-          }
-
-      break;
-
-    // In ylo and yhi planes:
-    //   * switch over between wall voxels <--> void voxels;
-    //   * count solid particle numbers in the region boundary voxels.
-    case 2:
-
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long k = 1; k <= nzLattice; k++)
+        if (LATTICE[i][j][k] == typeWall)
         {
-          for (unsigned long j = 1; j <= hy; j++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (j == hy) numSolidBeads += nSolidsPerLattice;
-            }
-          }
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
+        }
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
+        }
+      }
+  }
+  else if (flowDirection == 2)
+  {
+    for (unsigned long i = (xlo+1); i <= xhi; i++)
+      for (unsigned long k = (zlo+1); k <= zhi; k++)
+      {
+        unsigned long j;
 
-          for (unsigned long j = (nyLattice-hy+1); j <= nyLattice; j++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (j == (nyLattice-hy+1)) numSolidBeads += nSolidsPerLattice;
-            }
-          }
+        j = ylo+1;
+
+        if (LATTICE[i][j][k] == typeWall)
+        {
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
+        }
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
         }
 
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = (hy+1); j <= (nyLattice-hy); j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
+        j = yhi;
 
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      numSolidBeads += nSolidsPerLattice;
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if (LATTICE[i][j][k] == typePore)
-              numFluidBeads += nFluidsPerLattice;
-          }
-
-      break;
-
-    // In zlo and zhi planes:
-    //   * switch over between wall voxels <--> void voxels;
-    //   * count solid particle numbers in the region boundary voxels.
-    case 3:
-
-/*
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
+        if (LATTICE[i][j][k] == typeWall)
         {
-          for (unsigned long k = 1; k <= hz; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (k == hz) numSolidBeads += nSolidsPerLattice;
-            }
-          }
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
+        }
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
+        }
+      }
+  }
+  else if (flowDirection == 3)
+  {
+    for (unsigned long i = (xlo+1); i <= xhi; i++)
+      for (unsigned long j = (ylo+1); j <= yhi; j++)
+      {
+        unsigned long k;
 
-          for (unsigned long k = (nzLattice-hz+1); k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              LATTICE[i][j][k] = typeVoid;
-              numSolidLattice -= 1;
-            }
-            else
-            {
-              LATTICE[i][j][k] = typeWall;
-              numSolidLattice += 1;
-              if (k == (nzLattice-hz+1)) numSolidBeads += nSolidsPerLattice;
-            }
-          }
+        k = zlo+1;
+
+        if (LATTICE[i][j][k] == typeWall)
+        {
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
+        }
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
         }
 
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
-          for (unsigned long k = (hz+1); k <= (nzLattice-hz); k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
+        k = zhi;
 
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      numSolidBeads += nSolidsPerLattice;
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if (LATTICE[i][j][k] == typePore)
-              numFluidBeads += nFluidsPerLattice;
-          }
-*/
-
-      for (unsigned long i = 1; i <= xhi; i++)
-        for (unsigned long j = 1; j <= yhi; j++)
+        if (LATTICE[i][j][k] == typeWall)
         {
-          unsigned long k;
-
-          k = zlo+1;
-
-          if (LATTICE[i][j][k] == typeWall)
-            numSolidBeads += nSolidsPerLattice;
-          else if (LATTICE[i][j][k] == typePore)
-            numFluidBeads += nFluidsPerLattice;
-          else
-          {
-            LATTICE[i][j][k] = typeWall;
-            numSolidBeads += nSolidsPerLattice;
-          }
-
-          k = zhi;
-
-          if (LATTICE[i][j][k] == typeWall)
-            numSolidBeads += nSolidsPerLattice;
-          else if (LATTICE[i][j][k] == typePore)
-            numFluidBeads += nFluidsPerLattice;
-          else
-          {
-            LATTICE[i][j][k] = typeWall;
-            numSolidBeads += nSolidsPerLattice;
-          }
+          LATTICE[i][j][k] = typePore;
+          numFluidBeads += nFluidsPerLattice;
+          numSolidBeads -= nSolidsPerLattice;
         }
-
-      for (unsigned long i = 1; i <= xhi; i++)
-        for (unsigned long j = 1; j <= yhi; j++)
-          for (unsigned long k = (zlo+2); k <= (zhi-1); k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
-
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      numSolidBeads += nSolidsPerLattice;
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if (LATTICE[i][j][k] == typePore)
-              numFluidBeads += nFluidsPerLattice;
-          }
-
-      break;
-
-    default:
-      std::cout << "Error: flowDirection = " << flowDirection << "\n";
-      std::exit(0);
-      break;
+        else if (LATTICE[i][j][k] == typeWallKeep)
+        {
+          LATTICE[i][j][k] = typeWall;
+        }
+        else if (LATTICE[i][j][k] == typeVoid)
+        {
+          LATTICE[i][j][k] = typeWall;
+          numSolidBeads += nSolidsPerLattice;
+        }
+      }
   }
 
   numSolidVox = numSolidLattice / hx / hy / hz;
@@ -748,9 +604,9 @@ int main(int argc, char **argv)
     << numSolidBeads << " atoms\n"
     << nTypes << " atom types\n"
     << "\n"
-    << xlo << " " << xhi << " xlo xhi\n"
-    << ylo << " " << yhi << " ylo yhi\n"
-    << zlo << " " << zhi << " zlo zhi\n"
+    << 0 << " " << (xhi-xlo) << " xlo xhi\n"
+    << 0 << " " << (yhi-ylo) << " ylo yhi\n"
+    << 0 << " " << (zhi-zlo) << " zlo zhi\n"
     << "\n"
     << "Atoms\n"
     << "\n";
@@ -765,9 +621,9 @@ int main(int argc, char **argv)
     << numFluidBeads << " atoms\n"
     << nTypes << " atom types\n"
     << "\n"
-    << xlo << " " << xhi << " xlo xhi\n"
-    << ylo << " " << yhi << " ylo yhi\n"
-    << zlo << " " << zhi << " zlo zhi\n"
+    << 0 << " " << (xhi-xlo) << " xlo xhi\n"
+    << 0 << " " << (yhi-ylo) << " ylo yhi\n"
+    << 0 << " " << (zhi-zlo) << " zlo zhi\n"
     << "\n"
     << "Atoms\n"
     << "\n";
@@ -782,790 +638,41 @@ int main(int argc, char **argv)
   unsigned long indexSolidBead = 0;
   unsigned long indexFluidBead = 0;
 
-  switch ( flowDirection )
-  {
-    case 0:
-
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
-
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-                      {
-                        // Each call to dis(gen) generates a new random double
-
-                        //xrnd = double(i-1) + dis(gen);
-                        //yrnd = double(j-1) + dis(gen);
-                        //zrnd = double(k-1) + dis(gen);
-                        xrnd = double(i-1) + 0.5;
-                        yrnd = double(j-1) + 0.5;
-                        zrnd = double(k-1) + 0.5;
-
-                        indexSolidBead ++;
-
-                        outSolidFile
-                          << indexSolidBead << " " << typeWall << " "
-                          << xrnd << " " << yrnd << " " << zrnd << "\n";
-                      }
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if ((LATTICE[i][j][k] == typePore) && outFluid)
-              for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                //xrnd = double(i-1) + dis(gen);
-                //yrnd = double(j-1) + dis(gen);
-                //zrnd = double(k-1) + dis(gen);
-                xrnd = double(i-1) + 0.5;
-                yrnd = double(j-1) + 0.5;
-                zrnd = double(k-1) + 0.5;
-
-                indexFluidBead ++;
-
-                outFluidFile
-                  << indexFluidBead << " " << typePore << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-          }
-
-      break;
-
-    // In xlo and xhi planes:
-    case 1:
-
-      for (unsigned long j = 1; j <= nyLattice; j++)
-        for (unsigned long k = 1; k <= nzLattice; k++)
-        {
-          unsigned long i;
-
-          i = hx;
-          if (LATTICE[i][j][k] == typeWall)
-          {
-            for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-            {
-              // Each call to dis(gen) generates a new random double
-
-              xrnd = double(i-1) + dis(gen);
-              yrnd = double(j-1) + dis(gen);
-              zrnd = double(k-1) + dis(gen);
-
-              indexSolidBead ++;
-
-              outSolidFile
-                << indexSolidBead << " " << typeWall << " "
-                << xrnd << " " << yrnd << " " << zrnd << "\n";
-            }
-          }
-
-          i = nxLattice-hx+1;
-          if (LATTICE[i][j][k] == typeWall)
-          {
-            for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-            {
-              // Each call to dis(gen) generates a new random double
-
-              xrnd = double(i-1) + dis(gen);
-              yrnd = double(j-1) + dis(gen);
-              zrnd = double(k-1) + dis(gen);
-
-              indexSolidBead ++;
-
-              outSolidFile
-                << indexSolidBead << " " << typeWall << " "
-                << xrnd << " " << yrnd << " " << zrnd << "\n";
-            }
-          }
-        }
-
-      for (unsigned long i = hx+1; i <= (nxLattice-hx); i++)
-        for (unsigned long j = 1; j <= nyLattice; j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
-
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-                      {
-                        // Each call to dis(gen) generates a new random double
-
-                        //xrnd = double(i-1) + dis(gen);
-                        //yrnd = double(j-1) + dis(gen);
-                        //zrnd = double(k-1) + dis(gen);
-                        xrnd = double(i-1) + 0.5;
-                        yrnd = double(j-1) + 0.5;
-                        zrnd = double(k-1) + 0.5;
-
-                        indexSolidBead ++;
-
-                        outSolidFile
-                          << indexSolidBead << " " << typeWall << " "
-                          << xrnd << " " << yrnd << " " << zrnd << "\n";
-                      }
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if ((LATTICE[i][j][k] == typePore) && outFluid)
-              for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                //xrnd = double(i-1) + dis(gen);
-                //yrnd = double(j-1) + dis(gen);
-                //zrnd = double(k-1) + dis(gen);
-                xrnd = double(i-1) + 0.5;
-                yrnd = double(j-1) + 0.5;
-                zrnd = double(k-1) + 0.5;
-
-                indexFluidBead ++;
-
-                outFluidFile
-                  << indexFluidBead << " " << typePore << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-          }
-
-      break;
-
-    // In ylo and yhi planes:
-    case 2:
-
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long k = 1; k <= nzLattice; k++)
-        {
-          unsigned long j;
-
-          j = hy;
-          if (LATTICE[i][j][k] == typeWall)
-          {
-            for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-            {
-              // Each call to dis(gen) generates a new random double
-
-              xrnd = double(i-1) + dis(gen);
-              yrnd = double(j-1) + dis(gen);
-              zrnd = double(k-1) + dis(gen);
-
-              indexSolidBead ++;
-
-              outSolidFile
-                << indexSolidBead << " " << typeWall << " "
-                << xrnd << " " << yrnd << " " << zrnd << "\n";
-            }
-          }
-
-          j = nyLattice-hy+1;
-          if (LATTICE[i][j][k] == typeWall)
-          {
-            for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-            {
-              // Each call to dis(gen) generates a new random double
-
-              xrnd = double(i-1) + dis(gen);
-              yrnd = double(j-1) + dis(gen);
-              zrnd = double(k-1) + dis(gen);
-
-              indexSolidBead ++;
-
-              outSolidFile
-                << indexSolidBead << " " << typeWall << " "
-                << xrnd << " " << yrnd << " " << zrnd << "\n";
-            }
-          }
-        }
-
-      for (unsigned long i = 1; i <= nxLattice; i++)
-        for (unsigned long j = (hy+1); j <= (nyLattice-hy); j++)
-          for (unsigned long k = 1; k <= nzLattice; k++)
-          {
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              bool fillSolids = false;
-
-              for (unsigned long ii = i-1; ii <= (i+1); ii++)
-              {
-                for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                {
-                  for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                  {
-                    if(LATTICE[ii][jj][kk] == typePore)
-                    {
-                      fillSolids = true;
-                      for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-                      {
-                        // Each call to dis(gen) generates a new random double
-
-                        //xrnd = double(i-1) + dis(gen);
-                        //yrnd = double(j-1) + dis(gen);
-                        //zrnd = double(k-1) + dis(gen);
-                        xrnd = double(i-1) + 0.5;
-                        yrnd = double(j-1) + 0.5;
-                        zrnd = double(k-1) + 0.5;
-
-                        indexSolidBead ++;
-
-                        outSolidFile
-                          << indexSolidBead << " " << typeWall << " "
-                          << xrnd << " " << yrnd << " " << zrnd << "\n";
-                      }
-                      break;
-                    }
-                  }
-                  if (fillSolids) break;
-                }
-                if (fillSolids) break;
-              }
-            }
-            else if ((LATTICE[i][j][k] == typePore) && outFluid)
-              for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                //xrnd = double(i-1) + dis(gen);
-                //yrnd = double(j-1) + dis(gen);
-                //zrnd = double(k-1) + dis(gen);
-                xrnd = double(i-1) + 0.5;
-                yrnd = double(j-1) + 0.5;
-                zrnd = double(k-1) + 0.5;
-
-                indexFluidBead ++;
-
-                outFluidFile
-                  << indexFluidBead << " " << typePore << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-          }
-
-      break;
-
-    // In zlo and zhi planes:
-    case 3:
-
-      if (zlo == 0 && zhi == nzLattice)
+  for (unsigned long i = (xlo+1); i <= xhi; i++)
+    for (unsigned long j = (ylo+1); j <= yhi; j++)
+      for (unsigned long k = (zlo+1); k <= zhi; k++)
       {
-        for (unsigned long i = 1; i <= nxLattice; i++)
-          for (unsigned long j = 1; j <= nyLattice; j++)
+        if ((LATTICE[i][j][k] == typeWall) || (LATTICE[i][j][k] == typeWallKeep))
+          for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
           {
-            unsigned long k;
+            xrnd = double(i-1-xlo) + dis(gen);
+            yrnd = double(j-1-ylo) + dis(gen);
+            zrnd = double(k-1-zlo) + dis(gen);
 
-            k = hz;
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
+            indexSolidBead ++;
 
-                //xrnd = double(i-1) + dis(gen);
-                //yrnd = double(j-1) + dis(gen);
-                //zrnd = double(k-1) + dis(gen);
-                xrnd = double(i-1) + 0.5;
-                yrnd = double(j-1) + 0.5;
-                zrnd = double(k-1) + 0.5;
-
-                indexSolidBead ++;
-
-                outSolidFile
-                  << indexSolidBead << " " << typeWall << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-            }
-
-            k = nzLattice-hz+1;
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                //xrnd = double(i-1) + dis(gen);
-                //yrnd = double(j-1) + dis(gen);
-                //zrnd = double(k-1) + dis(gen);
-                xrnd = double(i-1) + 0.5;
-                yrnd = double(j-1) + 0.5;
-                zrnd = double(k-1) + 0.5;
-
-                indexSolidBead ++;
-
-                outSolidFile
-                  << indexSolidBead << " " << typeWall << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-            }
+            outSolidFile << indexSolidBead << " " << typeWall << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
           }
-
-        for (unsigned long i = 1; i <= nxLattice; i++)
-          for (unsigned long j = 1; j <= nyLattice; j++)
-            for (unsigned long k = (hz+1); k <= (nzLattice-hz); k++)
-            {
-              if (LATTICE[i][j][k] == typeWall)
-              {
-                bool fillSolids = false;
-
-                for (unsigned long ii = i-1; ii <= (i+1); ii++)
-                {
-                  for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                  {
-                    for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                    {
-                      if(LATTICE[ii][jj][kk] == typePore)
-                      {
-                        fillSolids = true;
-                        for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-                        {
-                          // Each call to dis(gen) generates a new random double
-
-                          //xrnd = double(i-1) + dis(gen);
-                          //yrnd = double(j-1) + dis(gen);
-                          //zrnd = double(k-1) + dis(gen);
-                          xrnd = double(i-1) + 0.5;
-                          yrnd = double(j-1) + 0.5;
-                          zrnd = double(k-1) + 0.5;
-
-                          indexSolidBead ++;
-
-                          outSolidFile
-                            << indexSolidBead << " " << typeWall << " "
-                            << xrnd << " " << yrnd << " " << zrnd << "\n";
-                        }
-                        break;
-                      }
-                    }
-                    if (fillSolids) break;
-                  }
-                  if (fillSolids) break;
-                }
-              }
-              else if ((LATTICE[i][j][k] == typePore) && outFluid)
-                for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-                {
-                  // Each call to dis(gen) generates a new random double
-
-                  //xrnd = double(i-1) + dis(gen);
-                  //yrnd = double(j-1) + dis(gen);
-                  //zrnd = double(k-1) + dis(gen);
-                  xrnd = double(i-1) + 0.5;
-                  yrnd = double(j-1) + 0.5;
-                  zrnd = double(k-1) + 0.5;
-
-                  indexFluidBead ++;
-
-                  outFluidFile
-                    << indexFluidBead << " " << typePore << " "
-                    << xrnd << " " << yrnd << " " << zrnd << "\n";
-                }
-            }
-
-      }
-      else
-      {
-        for (unsigned long i = 1; i <= xhi; i++)
-          for (unsigned long j = 1; j <= yhi; j++)
+        else if ((LATTICE[i][j][k] == typePore) && outFluid)
+          for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
           {
-            unsigned long k;
+            xrnd = double(i-1-xlo) + dis(gen);
+            yrnd = double(j-1-ylo) + dis(gen);
+            zrnd = double(k-1-zlo) + dis(gen);
 
-            k = zlo+1;
+            indexFluidBead ++;
 
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                xrnd = double(i-1) + dis(gen);
-                yrnd = double(j-1) + dis(gen);
-                zrnd = double(k-1) + dis(gen);
-
-                indexSolidBead ++;
-
-                outSolidFile
-                  << indexSolidBead << " " << typeWall << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-            }
-            else if ((LATTICE[i][j][k] == typePore) && outFluid)
-              for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                xrnd = double(i-1) + dis(gen);
-                yrnd = double(j-1) + dis(gen);
-                zrnd = double(k-1) + dis(gen);
-
-                indexFluidBead ++;
-
-                outFluidFile
-                  << indexFluidBead << " " << typePore << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-
-            k = zhi;
-
-            if (LATTICE[i][j][k] == typeWall)
-            {
-              for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                xrnd = double(i-1) + dis(gen);
-                yrnd = double(j-1) + dis(gen);
-                zrnd = double(k-1) + dis(gen);
-
-                indexSolidBead ++;
-
-                outSolidFile
-                  << indexSolidBead << " " << typeWall << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
-            }
-            else if ((LATTICE[i][j][k] == typePore) && outFluid)
-              for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-              {
-                // Each call to dis(gen) generates a new random double
-
-                xrnd = double(i-1) + dis(gen);
-                yrnd = double(j-1) + dis(gen);
-                zrnd = double(k-1) + dis(gen);
-
-                indexFluidBead ++;
-
-                outFluidFile
-                  << indexFluidBead << " " << typePore << " "
-                  << xrnd << " " << yrnd << " " << zrnd << "\n";
-              }
+            outFluidFile << indexFluidBead << " " << typePore << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
           }
-
-        for (unsigned long i = 1; i <= xhi; i++)
-          for (unsigned long j = 1; j <= yhi; j++)
-            for (unsigned long k = (zlo+2); k <= (zhi-1); k++)
-            {
-              if (LATTICE[i][j][k] == typeWall)
-              {
-                bool fillSolids = false;
-
-                for (unsigned long ii = i-1; ii <= (i+1); ii++)
-                {
-                  for (unsigned long jj = j-1; jj <= (j+1); jj++)
-                  {
-                    for (unsigned long kk = k-1; kk <= (k+1); kk++)
-                    {
-                      if(LATTICE[ii][jj][kk] == typePore)
-                      {
-                        fillSolids = true;
-                        for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-                        {
-                          // Each call to dis(gen) generates a new random double
-
-                          xrnd = double(i-1) + dis(gen);
-                          yrnd = double(j-1) + dis(gen);
-                          zrnd = double(k-1) + dis(gen);
-
-                          indexSolidBead ++;
-
-                          outSolidFile
-                            << indexSolidBead << " " << typeWall << " "
-                            << xrnd << " " << yrnd << " " << zrnd << "\n";
-                        }
-                        break;
-                      }
-                    }
-                    if (fillSolids) break;
-                  }
-                  if (fillSolids) break;
-                }
-              }
-              else if ((LATTICE[i][j][k] == typePore) && outFluid)
-                for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-                {
-                  // Each call to dis(gen) generates a new random double
-
-                  xrnd = double(i-1) + dis(gen);
-                  yrnd = double(j-1) + dis(gen);
-                  zrnd = double(k-1) + dis(gen);
-
-                  indexFluidBead ++;
-
-                  outFluidFile
-                    << indexFluidBead << " " << typePore << " "
-                    << xrnd << " " << yrnd << " " << zrnd << "\n";
-                }
-            }
       }
-      break;
-  }
 
-  std::cout << "After voxel swap at the region boundaries:\n\n";
+  std::cout << "In the cropped region:\n\n";
   std::cout
     << std::left << std::setfill('.')
-    << std::setw(40) << "numSolidVox  "    << "  " << numSolidVox    << "\n"
-    << std::setw(40) << "numFluidVox  "    << "  " << numFluidVox    << "\n"
     << std::setw(40) << "numSolidBeads  "  << "  " << numSolidBeads  << "\n"
     << std::setw(40) << "indexSolidBead  " << "  " << indexSolidBead << "\n"
     << std::setw(40) << "numFluidBeads  "  << "  " << numFluidBeads  << "\n"
     << std::setw(40) << "indexFluidBead  " << "  " << indexFluidBead << "\n";
-
-/*
-  // =========================================================================
-  // Read voxel data for the 1st time to obtain the number of beads for output
-  // =========================================================================
-
-  inpSolidFile.open(inpSolidFileName, std::ios::in);
-
-  if (!inpSolidFile.is_open())
-  {
-    std::cout << "\n Fatal: file " << inpSolidFileName << " does not exist.\n";
-    std::exit(0);
-  }
-
-  myVoxelIndex = 0;
-
-  std::cout << "1st time looping through input file " << inpSolidFileName << " to check data sanity\n";
-
-  while (!inpSolidFile.eof())
-  {
-    inpSolidFile >> ix >> iy >> iz >> ivoxel; std::getline(inpSolidFile,skipLine);
-
-    if (inpSolidFile.eof()) break;
-
-    myVoxelIndex ++;
-    std::cout << std::setw(41) << "\r  IMG: voxels looped  " << "  " << myVoxelIndex << std::flush;
-
-    // check bound
-
-    if (!checkRange) continue;
-    if (ix > imgNx || iy > imgNy || iz > imgNz)
-    {
-      std::cout
-        << "\n\n" << "Error: in file " << inpSolidFileName << ", Line " << myVoxelIndex << ", "
-        << "(ix,iy,iz) = (" << ix << "," << iy << "," << iz << ") out of range!\n";
-      std::exit(0);
-    }
-
-    // check ROI
-
-    bool isROI = true;
-
-    if (ix < roiNxLo || ix > roiNxHi) isROI = false;
-    if (iy < roiNyLo || iy > roiNyHi) isROI = false;
-    if (iz < roiNzLo || iz > roiNzHi) isROI = false;
-
-    // count numbers
-
-    if (ivoxel == 0)
-    {
-      numSolidVoxels ++;
-      if (isROI)
-      {
-        numVoxelsROI ++;
-        numSolidVoxelsROI ++;
-        numSolidBeads += nSolidsPerLattice;
-        numBeads      += nSolidsPerLattice;
-      }
-    }
-    else if (ivoxel < nTypes)
-    {
-      numFluidVoxels ++;
-      if (isROI)
-      {
-        numVoxelsROI ++;
-        numFluidVoxelsROI ++;
-        numFluidBeads += nFluidsPerLattice;
-        numBeads      += nFluidsPerLattice;
-      }
-    }
-    else if (ivoxel >= nMaxTypes)
-    {
-      std::cout
-        << "\n Error: in file " << inpSolidFileName << "\n"
-        << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
-        << "contains an invalid voxel value ...\n";
-      std::exit(0);
-    }
-  }
-  std::cout << "\n";
-  inpSolidFile.close();
-
-  // Check data consistancy
-
-  if (myVoxelIndex != numVoxels)
-  {
-    std::cout
-      << "\n" << "Error: myVoxelIndex not equal to numVoxels!\n"
-      << "myVoxelIndex = " << myVoxelIndex << "\n"
-      << "numVoxels    = " << numVoxels    << "\n";
-    std::exit(0);
-  }
-
-  numBeads = numSolidBeads + numFluidBeads;
-
-  std::cout << std::setw(40) << "  IMG: solid voxels  " << "  " << numSolidVoxels << "\n";
-  std::cout << std::setw(40) << "  IMG: fluid voxels  " << "  " << numFluidVoxels << "\n";
-  std::cout << std::setw(40) << "  ROI: total voxels  " << "  " << numVoxelsROI << "\n";
-  std::cout << std::setw(40) << "  ROI: solid voxels  " << "  " << numSolidVoxelsROI << "\n";
-  std::cout << std::setw(40) << "  ROI: fluid voxels  " << "  " << numFluidVoxelsROI << "\n";
-  std::cout << std::setw(40) << "  ROI: total beads  "  << "  " << numBeads << "\n";
-  std::cout << std::setw(40) << "  ROI: solid beads  "  << "  " << numSolidBeads << "\n";
-  std::cout << std::setw(40) << "  ROI: fluid beads  "  << "  " << numFluidBeads << "\n";
-
-  // ===============================================================
-  // Read voxel data for the 2nd time to output the LAMMPS data file
-  // ===============================================================
-
-  roixlo *= myScale;
-  roixhi *= myScale;
-  roiylo *= myScale;
-  roiyhi *= myScale;
-  roizlo *= myScale;
-  roizhi *= myScale;
-
-  outSolidFile.open(outSolidFileName, std::ios::out);
-  outSolidFile.precision(16);
-  outSolidFile << std::scientific;
-
-  outSolidFile
-    << "LAMMPS data file for read_data\n"
-    << "\n"
-    << numSolidBeads << " atoms\n"
-    << nTypes << " atom types\n"
-    << "\n"
-    << roixlo << " " << roixhi << " xlo xhi\n"
-    << roiylo << " " << roiyhi << " ylo yhi\n"
-    << roizlo << " " << roizhi << " zlo zhi\n"
-    << "\n"
-    << "Atoms\n"
-    << "\n";
-
-  outFluidFile.open(outFluidFileName, std::ios::out);
-  outFluidFile.precision(16);
-  outFluidFile << std::scientific;
-
-  outFluidFile
-    << "LAMMPS data file for read_data\n"
-    << "\n"
-    << numFluidBeads << " atoms\n"
-    << nTypes << " atom types\n"
-    << "\n"
-    << roixlo << " " << roixhi << " xlo xhi\n"
-    << roiylo << " " << roiyhi << " ylo yhi\n"
-    << roizlo << " " << roizhi << " zlo zhi\n"
-    << "\n"
-    << "Atoms\n"
-    << "\n";
-
-  // Obtain a seed for the random number engine
-  // Standard mersenne_twister_engine seeded with rd()
-
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dis(0.01, 0.99);
-
-  // Re-initialize counters
-
-  myVoxelIndex = 0;
-  mySolidBeadIndex = 0;
-  myFluidBeadIndex = 0;
-
-  inpSolidFile.open(inpSolidFileName, std::ios::in);
-
-  std::cout << "2nd time looping through input file " << inpSolidFileName << " to write output\n";
-
-  while (!inpSolidFile.eof())
-  {
-    inpSolidFile >> ix >> iy >> iz >> ivoxel; std::getline(inpSolidFile,skipLine);
-
-    if (inpSolidFile.eof()) break;
-
-    myVoxelIndex ++;
-    std::cout << std::setw(41) << "\r  IMG: voxels looped  " << "  " << myVoxelIndex << std::flush;
-
-    bool isROI = true;
-
-    if (ix < roiNxLo || ix > roiNxHi) isROI = false;
-    if (iy < roiNyLo || iy > roiNyHi) isROI = false;
-    if (iz < roiNzLo || iz > roiNzHi) isROI = false;
-    if (!isROI) continue;
-
-    if (ivoxel == 0)
-    {
-      if (outSolid)
-      {
-        for (unsigned int i = 1; i <= nSolidsPerLattice; i++)
-        {
-          mySolidBeadIndex ++;
-
-          // Each call to dis(gen) generates a new random double
-
-          xrnd = myScale * (double(ix - 1) + dis(gen)) * hx;
-          yrnd = myScale * (double(iy - 1) + dis(gen)) * hy;
-          zrnd = myScale * (double(iz - 1) + dis(gen)) * hz;
-
-          outSolidFile << mySolidBeadIndex << " " << (ivoxel+1) << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
-        }
-      }
-    }
-    else if (ivoxel < nTypes)
-    {
-      if (outFluid)
-      {
-        for (unsigned int i = 1; i <= nFluidsPerLattice; i++)
-        {
-          myFluidBeadIndex ++;
-
-          // Each call to dis(gen) generates a new random double
-
-          xrnd = myScale * (double(ix - 1) + dis(gen)) * hx;
-          yrnd = myScale * (double(iy - 1) + dis(gen)) * hy;
-          zrnd = myScale * (double(iz - 1) + dis(gen)) * hz;
-
-          outFluidFile << myFluidBeadIndex << " " << (ivoxel+1) << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
-        }
-      }
-    }
-    else if (ivoxel >= nMaxTypes)
-    {
-      std::cout
-        << "\n Error: in file " << inpSolidFileName << "\n"
-        << "  ix = " << ix << ", iy = " << iy << ", iz = " << iz << ", ivoxel = " << ivoxel << "\n"
-        << "contains an invalid voxel value ...\n";
-      std::exit(0);
-    }
-  }
-  std::cout << "\n";
-
-*/
 
   inpSolidFile.close();
   outSolidFile.close();
