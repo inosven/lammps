@@ -199,7 +199,7 @@ void FixSolidWallMDPD::post_integrate()
       }
     }
   }
-  if (newton_pair) comm->reverse_comm_fix_variable(this);
+  if (newton_pair) comm->reverse_comm_fix(this,5);
 
   for (i = 0; i < nlocal; i++)
   if ( (mask[i] & groupbit) && phi[i] > phi_c) {
