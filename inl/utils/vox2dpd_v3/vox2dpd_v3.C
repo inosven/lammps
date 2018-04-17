@@ -484,11 +484,23 @@ int main(int argc, char **argv)
 
         i = xlo+1;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i+1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j-1][k  ] != typeVoid) &&
+             (LATTICE[i+1][j-1][k+1] != typeVoid) &&
+             (LATTICE[i+1][j  ][k-1] != typeVoid) &&
+             (LATTICE[i+1][j  ][k  ] != typeVoid) &&
+             (LATTICE[i+1][j  ][k+1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k  ] != typeVoid) &&
+             (LATTICE[i+1][j+1][k+1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (j > (ylo+1)) && (j < yhi) && (k > (zlo+1)) && (k < zhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -502,11 +514,23 @@ int main(int argc, char **argv)
 
         i = xhi;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i-1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i-1][j-1][k  ] != typeVoid) &&
+             (LATTICE[i-1][j-1][k+1] != typeVoid) &&
+             (LATTICE[i-1][j  ][k-1] != typeVoid) &&
+             (LATTICE[i-1][j  ][k  ] != typeVoid) &&
+             (LATTICE[i-1][j  ][k+1] != typeVoid) &&
+             (LATTICE[i-1][j+1][k-1] != typeVoid) &&
+             (LATTICE[i-1][j+1][k  ] != typeVoid) &&
+             (LATTICE[i-1][j+1][k+1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (j > (ylo+1)) && (j < yhi) && (k > (zlo+1)) && (k < zhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -528,11 +552,23 @@ int main(int argc, char **argv)
 
         j = ylo+1;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i-1][j+1][k-1] != typeVoid) &&
+             (LATTICE[i-1][j+1][k  ] != typeVoid) &&
+             (LATTICE[i-1][j+1][k+1] != typeVoid) &&
+             (LATTICE[i  ][j+1][k-1] != typeVoid) &&
+             (LATTICE[i  ][j+1][k  ] != typeVoid) &&
+             (LATTICE[i  ][j+1][k+1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k  ] != typeVoid) &&
+             (LATTICE[i+1][j+1][k+1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (i > (xlo+1)) && (i < xhi) && (k > (zlo+1)) && (k < zhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -546,11 +582,23 @@ int main(int argc, char **argv)
 
         j = yhi;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i-1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i-1][j-1][k  ] != typeVoid) &&
+             (LATTICE[i-1][j-1][k+1] != typeVoid) &&
+             (LATTICE[i  ][j-1][k-1] != typeVoid) &&
+             (LATTICE[i  ][j-1][k  ] != typeVoid) &&
+             (LATTICE[i  ][j-1][k+1] != typeVoid) &&
+             (LATTICE[i+1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j-1][k  ] != typeVoid) &&
+             (LATTICE[i+1][j-1][k+1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (i > (xlo+1)) && (i < xhi) && (k > (zlo+1)) && (k < zhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -572,11 +620,23 @@ int main(int argc, char **argv)
 
         k = zlo+1;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i-1][j-1][k+1] != typeVoid) &&
+             (LATTICE[i-1][j  ][k+1] != typeVoid) &&
+             (LATTICE[i-1][j+1][k+1] != typeVoid) &&
+             (LATTICE[i  ][j-1][k+1] != typeVoid) &&
+             (LATTICE[i  ][j  ][k+1] != typeVoid) &&
+             (LATTICE[i  ][j+1][k+1] != typeVoid) &&
+             (LATTICE[i+1][j-1][k+1] != typeVoid) &&
+             (LATTICE[i+1][j  ][k+1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k+1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (i > (xlo+1)) && (i < xhi) && (j > (ylo+1)) && (j < yhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -590,11 +650,23 @@ int main(int argc, char **argv)
 
         k = zhi;
 
-        if (LATTICE[i][j][k] == typeWall)
+        if ( (LATTICE[i  ][j  ][k  ] == typeWall) &&
+             (LATTICE[i-1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i-1][j  ][k-1] != typeVoid) &&
+             (LATTICE[i-1][j+1][k-1] != typeVoid) &&
+             (LATTICE[i  ][j-1][k-1] != typeVoid) &&
+             (LATTICE[i  ][j  ][k-1] != typeVoid) &&
+             (LATTICE[i  ][j+1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j-1][k-1] != typeVoid) &&
+             (LATTICE[i+1][j  ][k-1] != typeVoid) &&
+             (LATTICE[i+1][j+1][k-1] != typeVoid) )
         {
-          LATTICE[i][j][k] = typePore;
-          numFluidBeads += nFluidsPerLattice;
-          numSolidBeads -= nSolidsPerLattice;
+          if ( (i > (xlo+1)) && (i < xhi) && (j > (ylo+1)) && (j < yhi) )
+          {
+            LATTICE[i][j][k] = typePore;
+            numFluidBeads += nFluidsPerLattice;
+            numSolidBeads -= nSolidsPerLattice;
+          }
         }
         else if (LATTICE[i][j][k] == typeWallKeep)
         {
@@ -655,24 +727,30 @@ int main(int argc, char **argv)
   std::string iNameSolidsRhoUnitDist = "LAMMPS_rho" + std::to_string(nSolidsPerLattice) + "_unit_dist.dump";
   std::ifstream iFileSolidsRhoUnitDist;
   iFileSolidsRhoUnitDist.open(iNameSolidsRhoUnitDist, std::ios::in);
-  if (!iFileSolidsRhoUnitDist.is_open())
+  if (nSolidsPerLattice > 1)
   {
-    std::cout << "\n" << "Fatal: file " << iNameSolidsRhoUnitDist << " does not exist.\n";
-    std::exit(0);
+    if (!iFileSolidsRhoUnitDist.is_open())
+    {
+      std::cout << "\n" << "Fatal: file " << iNameSolidsRhoUnitDist << " does not exist.\n";
+      std::exit(0);
+    }
+    else
+      std::cout << "Open file: " << iNameSolidsRhoUnitDist << std::endl;
   }
-  else
-    std::cout << "Open file: " << iNameSolidsRhoUnitDist << std::endl;
 
   std::string iNameFluidsRhoUnitDist = "LAMMPS_rho" + std::to_string(nFluidsPerLattice) + "_unit_dist.dump";
   std::ifstream iFileFluidsRhoUnitDist;
   iFileFluidsRhoUnitDist.open(iNameFluidsRhoUnitDist, std::ios::in);
-  if (!iFileFluidsRhoUnitDist.is_open())
+  if (nFluidsPerLattice > 1)
   {
-    std::cout << "\n" << "Fatal: file " << iNameFluidsRhoUnitDist << " does not exist.\n";
-    std::exit(0);
+    if (!iFileFluidsRhoUnitDist.is_open())
+    {
+      std::cout << "\n" << "Fatal: file " << iNameFluidsRhoUnitDist << " does not exist.\n";
+      std::exit(0);
+    }
+    else
+      std::cout << "Open file: " << iNameFluidsRhoUnitDist << std::endl;
   }
-  else
-    std::cout << "Open file: " << iNameFluidsRhoUnitDist << std::endl;
 
   unsigned long indexSolidBead = 0;
   unsigned long indexFluidBead = 0;
@@ -683,86 +761,112 @@ int main(int argc, char **argv)
       {
         if ((LATTICE[i][j][k] == typeWall) || (LATTICE[i][j][k] == typeWallKeep))
         {
-          // At the end of file, close file and open again
-          if (iFileSolidsRhoUnitDist.eof())
+          if (nSolidsPerLattice == 1)
           {
-            iFileSolidsRhoUnitDist.close();
-            iFileSolidsRhoUnitDist.open(iNameSolidsRhoUnitDist, std::ios::in);
-          }
-
-          // Skip 9 lines
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-          std::getline(iFileSolidsRhoUnitDist,skipLine);
-
-          for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
-          {
-            iFileSolidsRhoUnitDist >> itmp >> itmp >> xs >> ys >> zs;
-            std::getline(iFileSolidsRhoUnitDist,skipLine);
-
-            // take care of periodic boundary condition
-            if (xs < 0.001) xs = 0.999 - (0.001 - xs);
-            if (xs > 0.999) xs = 0.001 + (xs - 0.999);
-            if (ys < 0.001) ys = 0.999 - (0.001 - ys);
-            if (ys > 0.999) ys = 0.001 + (ys - 0.999);
-            if (zs < 0.001) zs = 0.999 - (0.001 - zs);
-            if (zs > 0.999) zs = 0.001 + (zs - 0.999);
-
-            xrnd = xs + double(i-1-xlo);
-            yrnd = ys + double(j-1-ylo);
-            zrnd = zs + double(k-1-zlo);
+            xrnd = 0.5 + double(i-1-xlo);
+            yrnd = 0.5 + double(j-1-ylo);
+            zrnd = 0.5 + double(k-1-zlo);
 
             indexSolidBead ++;
 
             outSolidFile << indexSolidBead << " " << typeWall << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
           }
+          else
+          {
+            // At the end of file, close file and open again
+            if (iFileSolidsRhoUnitDist.eof())
+            {
+              iFileSolidsRhoUnitDist.close();
+              iFileSolidsRhoUnitDist.open(iNameSolidsRhoUnitDist, std::ios::in);
+            }
+
+            // Skip 9 lines
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+            std::getline(iFileSolidsRhoUnitDist,skipLine);
+
+            for (unsigned int irnd = 0; irnd < nSolidsPerLattice; irnd++)
+            {
+              iFileSolidsRhoUnitDist >> itmp >> itmp >> xs >> ys >> zs;
+              std::getline(iFileSolidsRhoUnitDist,skipLine);
+
+              // take care of periodic boundary condition
+              if (xs < 0.001) xs = 0.999 - (0.001 - xs);
+              if (xs > 0.999) xs = 0.001 + (xs - 0.999);
+              if (ys < 0.001) ys = 0.999 - (0.001 - ys);
+              if (ys > 0.999) ys = 0.001 + (ys - 0.999);
+              if (zs < 0.001) zs = 0.999 - (0.001 - zs);
+              if (zs > 0.999) zs = 0.001 + (zs - 0.999);
+
+              xrnd = xs + double(i-1-xlo);
+              yrnd = ys + double(j-1-ylo);
+              zrnd = zs + double(k-1-zlo);
+
+              indexSolidBead ++;
+
+              outSolidFile << indexSolidBead << " " << typeWall << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
+            }
+          }
         }
         else if ((LATTICE[i][j][k] == typePore) && outFluid)
         {
-          // At the end of file, close file and open again
-          if (iFileFluidsRhoUnitDist.eof())
+          if (nFluidsPerLattice == 1)
           {
-            iFileFluidsRhoUnitDist.close();
-            iFileFluidsRhoUnitDist.open(iNameFluidsRhoUnitDist, std::ios::in);
-          }
-
-          // Skip 9 lines
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-          std::getline(iFileFluidsRhoUnitDist,skipLine);
-
-          for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
-          {
-            iFileFluidsRhoUnitDist >> itmp >> itmp >> xs >> ys >> zs;
-            std::getline(iFileFluidsRhoUnitDist,skipLine);
-
-            // take care of periodic boundary condition
-            if (xs < 0.001) xs = 0.999 - (0.001 - xs);
-            if (xs > 0.999) xs = 0.001 + (xs - 0.999);
-            if (ys < 0.001) ys = 0.999 - (0.001 - ys);
-            if (ys > 0.999) ys = 0.001 + (ys - 0.999);
-            if (zs < 0.001) zs = 0.999 - (0.001 - zs);
-            if (zs > 0.999) zs = 0.001 + (zs - 0.999);
-
-            xrnd = xs + double(i-1-xlo);
-            yrnd = ys + double(j-1-ylo);
-            zrnd = zs + double(k-1-zlo);
+            xrnd = 0.5 + double(i-1-xlo);
+            yrnd = 0.5 + double(j-1-ylo);
+            zrnd = 0.5 + double(k-1-zlo);
 
             indexFluidBead ++;
 
             outFluidFile << indexFluidBead << " " << typePore << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
+          }
+          else
+          {
+            // At the end of file, close file and open again
+            if (iFileFluidsRhoUnitDist.eof())
+            {
+              iFileFluidsRhoUnitDist.close();
+              iFileFluidsRhoUnitDist.open(iNameFluidsRhoUnitDist, std::ios::in);
+            }
+
+            // Skip 9 lines
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+            std::getline(iFileFluidsRhoUnitDist,skipLine);
+
+            for (unsigned int irnd = 0; irnd < nFluidsPerLattice; irnd++)
+            {
+              iFileFluidsRhoUnitDist >> itmp >> itmp >> xs >> ys >> zs;
+              std::getline(iFileFluidsRhoUnitDist,skipLine);
+
+              // take care of periodic boundary condition
+              if (xs < 0.001) xs = 0.999 - (0.001 - xs);
+              if (xs > 0.999) xs = 0.001 + (xs - 0.999);
+              if (ys < 0.001) ys = 0.999 - (0.001 - ys);
+              if (ys > 0.999) ys = 0.001 + (ys - 0.999);
+              if (zs < 0.001) zs = 0.999 - (0.001 - zs);
+              if (zs > 0.999) zs = 0.001 + (zs - 0.999);
+
+              xrnd = xs + double(i-1-xlo);
+              yrnd = ys + double(j-1-ylo);
+              zrnd = zs + double(k-1-zlo);
+
+              indexFluidBead ++;
+
+              outFluidFile << indexFluidBead << " " << typePore << " " << xrnd << " " << yrnd << " " << zrnd << "\n";
+            }
           }
         }
       }
