@@ -1,0 +1,16 @@
+# flow direction (0 = default;1 = x; 2 = y; 3 = z)
+  3
+# cropXlo cropXhi (in %)
+  5       70
+# cropYlo cropYhi (in %)
+  20      70
+# cropZLo cropZHi (in %)
+  35      99
+# hx hy hz (scaling coefficient in each direction)
+  1  1  2
+# nSolidsPerLattice nFluidsPerLattice
+  8                 6
+# nTypes (default = 3)
+  3
+# outSolid? outFluid?
+  1         1
