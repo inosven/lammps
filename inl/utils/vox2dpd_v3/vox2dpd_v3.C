@@ -33,10 +33,12 @@ int main(int argc, char **argv)
 
   unsigned int flowDirection = 0;
 
+  // So far we consider at most two types of fluids
+
   unsigned int typeVoid = 0;
-  unsigned int typeWall = 1;
-  unsigned int typePore = 2;
-  unsigned int typeWallKeep = 111;
+  unsigned int typePore = 1;
+  unsigned int typeWall = 3;
+  unsigned int typeWallKeep = 333;
 
   unsigned long ix,iy,iz;
 
