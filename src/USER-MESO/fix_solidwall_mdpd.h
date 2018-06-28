@@ -36,7 +36,7 @@ class FixSolidWallMDPD : public Fix {
 
  protected:
   double phi_c, rho_wall, cut_phi, cut_rho;
-  int flag_wall;
+  int solids_group, solids_groupbit;
   int newton_pair;
   double rho_factor, phi_factor, dw_factor;
   double dtv,dtf;

@@ -36,6 +36,7 @@
 #include "citeme.h"
 #include "memory.h"
 #include "error.h"
+#include "group.h"
 #include <time.h>
 
 using namespace LAMMPS_NS;
@@ -87,7 +88,7 @@ PairMDPDSolidWall::~PairMDPDSolidWall()
 
 void PairMDPDSolidWall::compute(int eflag, int vflag)
 {
-  int i,j,ii,jj,inum,jnum,itype,jtype;
+  int i,j,ii,jj,inum,jnum,itype,jtype,imask,jmask;
   double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
   double vxtmp,vytmp,vztmp,delvx,delvy,delvz;
   double rsq,r,rinv,dot,wc,wc_r, wr,randnum,factor_dpd;
@@ -105,6 +106,7 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
   double *rho= atom->rho;
   double *phi = atom->phi;
   double *mass = atom->mass;
+  int *mask = atom->mask;
   int *type = atom->type;
   int nlocal = atom->nlocal;
   int nall = atom->nlocal + atom->nghost;
@@ -126,6 +128,7 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
     vytmp = v[i][1];
     vztmp = v[i][2];
     itype = type[i];
+    imask = mask[i];
     jlist = firstneigh[i];
     jnum = numneigh[i];
     rhoi = rho[i];
@@ -139,6 +142,7 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
       jtype = type[j];
+      jmask = mask[j];
 
       if (rsq < cutsq[itype][jtype]) {
         r = sqrt(rsq);
@@ -148,9 +152,10 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
         sigma_e = sigma[itype][jtype];
         gamma_e = gamma[itype][jtype];
         ratio = 1.0;
-        if(itype != flag_wall && jtype == flag_wall)
+
+        if (~(imask & solids_groupbit) && (jmask & solids_groupbit))
           ratio = effective_factor(phi[i],cut[itype][jtype]);
-        else if(jtype != flag_wall && itype == flag_wall)
+        else if ((imask & solids_groupbit) && ~(jmask & solids_groupbit))
           ratio = effective_factor(phi[j],cut[itype][jtype]);
 
         sigma_e *= sqrt(ratio);
@@ -228,12 +233,14 @@ void PairMDPDSolidWall::allocate()
 
 void PairMDPDSolidWall::settings(int narg, char **arg)
 {
-  if (narg != 4) error->all(FLERR,"Illegal pair_style command:\n temp cut_global seed flag_wall");
+  if (narg != 4) error->all(FLERR,"Illegal pair_style command:\n temp cut_global seed solids_group");
 
   temperature = force->numeric(FLERR,arg[0]);
   cut_global = force->numeric(FLERR,arg[1]);
   seed = force->inumeric(FLERR,arg[2]);
-  flag_wall = force->inumeric(FLERR,arg[3]);
+  if ((solids_group = group->find(arg[3])) == -1)
+    error->all(FLERR, "Undefined solids group id in pairstyle mdpdsolidwall" );
+  solids_groupbit = group->bitmask[solids_group];
 
   // initialize Marsaglia RNG with processor-unique seed
 
@@ -393,7 +400,7 @@ void PairMDPDSolidWall::write_restart_settings(FILE *fp)
   fwrite(&temperature,sizeof(double),1,fp);
   fwrite(&cut_global,sizeof(double),1,fp);
   fwrite(&seed,sizeof(int),1,fp);
-  fwrite(&flag_wall,sizeof(int),1,fp);
+  fwrite(&solids_groupbit,sizeof(int),1,fp);
   fwrite(&mix_flag,sizeof(int),1,fp);
 }
 
@@ -407,13 +414,13 @@ void PairMDPDSolidWall::read_restart_settings(FILE *fp)
     fread(&temperature,sizeof(double),1,fp);
     fread(&cut_global,sizeof(double),1,fp);
     fread(&seed,sizeof(int),1,fp);
-    fread(&flag_wall,sizeof(int),1,fp);
+    fread(&solids_groupbit,sizeof(int),1,fp);
     fread(&mix_flag,sizeof(int),1,fp);
   }
   MPI_Bcast(&temperature,1,MPI_DOUBLE,0,world);
   MPI_Bcast(&cut_global,1,MPI_DOUBLE,0,world);
   MPI_Bcast(&seed,1,MPI_INT,0,world);
-  MPI_Bcast(&flag_wall,1,MPI_INT,0,world);
+  MPI_Bcast(&solids_groupbit,1,MPI_INT,0,world);
   MPI_Bcast(&mix_flag,1,MPI_INT,0,world);
 
   // initialize Marsaglia RNG with processor-unique seed

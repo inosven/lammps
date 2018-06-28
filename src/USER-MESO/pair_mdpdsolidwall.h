@@ -42,7 +42,8 @@ class PairMDPDSolidWall : public Pair {
 
  protected:
   double cut_global,temperature;
-  int seed, flag_wall;
+  int seed;
+  int solids_group, solids_groupbit;
   double **cut, **cut_r;
   double **A_att,**B_rep;
   double **gamma,**sigma;

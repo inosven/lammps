@@ -32,6 +32,7 @@
 #include "update.h"
 #include "memory.h"
 #include "error.h"
+#include "group.h"
 
 #define const_pi 3.141592653589793
 #define EPSILON 1.0e-6
@@ -60,9 +61,11 @@ FixSolidWallMDPD::FixSolidWallMDPD(LAMMPS *lmp, int narg, char **arg) :
   if (lmp->citeme) lmp->citeme->add(cite_fix_solidwall_mdpd);
 
   if (strcmp(style,"abitrary/bc") != 0 && narg < 8)
-    error->all(FLERR,"Illegal fix abitrary/bc command: flag_wall rho_wall cut_phi phi_c cut_rho");
+    error->all(FLERR,"Illegal fix abitrary/bc command: solids_group rho_wall cut_phi phi_c cut_rho");
 
-  flag_wall = force->inumeric(FLERR,arg[3]);
+  if ((solids_group = group->find(arg[3])) == -1)
+    error->all(FLERR, "Undefined solids group id in fix mdpdsolidwall command" );
+  solids_groupbit = group->bitmask[solids_group];
   rho_wall = force->numeric(FLERR,arg[4]);
   cut_phi = force->numeric(FLERR,arg[5]);
   phi_c = force->numeric(FLERR,arg[6]);
@@ -180,21 +183,26 @@ void FixSolidWallMDPD::post_integrate()
       }
 
       h = cut_phi;
-      if ( (itype==flag_wall || jtype==flag_wall) && r < h ) {
-        r_inv = 1.0/r;
-        if(itype == flag_wall && jtype != flag_wall) {
-          phi[j] += (h + 3.0*r)*(h - r)*(h - r)*(h - r)*phi_factor;
-          tmp = r*(h-r)*(h-r)*dw_factor;
-          nw[j][0] += tmp * delx *r_inv;
-          nw[j][1] += tmp * dely *r_inv;
-          nw[j][2] += tmp * delz *r_inv;
+
+      if (r < h)
+      {
+        if ((mask[i] & solids_groupbit) && ~(mask[j] & solids_groupbit))
+        {
+          r_inv = 1.0/r;
+          phi[j] += (h+3.0*r) * (h-r) * (h-r) * (h-r) * phi_factor;
+          tmp = r * (h-r) * (h-r) * dw_factor;
+          nw[j][0] += tmp * delx * r_inv;
+          nw[j][1] += tmp * dely * r_inv;
+          nw[j][2] += tmp * delz * r_inv;
         }
-        else if(itype != flag_wall && jtype == flag_wall) {
-          phi[i] += (h + 3.0*r)*(h - r)*(h - r)*(h - r)*phi_factor;
-          tmp = r*(h-r)*(h-r)*dw_factor;
-          nw[i][0] -= tmp * delx *r_inv;
-          nw[i][1] -= tmp * dely *r_inv;
-          nw[i][2] -= tmp * delz *r_inv;
+        else if ((mask[j] & solids_groupbit) && ~(mask[i] & solids_groupbit))
+        {
+          r_inv = 1.0/r;
+          phi[i] += (h+3.0*r) * (h-r) * (h-r) * (h-r) * phi_factor;
+          tmp = r * (h-r) * (h-r) * dw_factor;
+          nw[i][0] -= tmp * delx * r_inv;
+          nw[i][1] -= tmp * dely * r_inv;
+          nw[i][2] -= tmp * delz * r_inv;
         }
       }
     }
