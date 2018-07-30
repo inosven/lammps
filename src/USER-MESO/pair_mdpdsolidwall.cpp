@@ -153,9 +153,9 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
         gamma_e = gamma[itype][jtype];
         ratio = 1.0;
 
-        if (~(imask & solids_groupbit) && (jmask & solids_groupbit))
+        if ((imask & fluids_groupbit) && (jmask & solids_groupbit))
           ratio = effective_factor(phi[i],cut[itype][jtype]);
-        else if ((imask & solids_groupbit) && ~(jmask & solids_groupbit))
+        else if ((imask & solids_groupbit) && (jmask & fluids_groupbit))
           ratio = effective_factor(phi[j],cut[itype][jtype]);
 
         sigma_e *= sqrt(ratio);
@@ -233,14 +233,19 @@ void PairMDPDSolidWall::allocate()
 
 void PairMDPDSolidWall::settings(int narg, char **arg)
 {
-  if (narg != 4) error->all(FLERR,"Illegal pair_style command:\n temp cut_global seed solids_group");
+  if (narg != 5) error->all(FLERR,"Illegal pair_style command:\n temp cut_global seed solids_group");
 
   temperature = force->numeric(FLERR,arg[0]);
   cut_global = force->numeric(FLERR,arg[1]);
   seed = force->inumeric(FLERR,arg[2]);
+
   if ((solids_group = group->find(arg[3])) == -1)
     error->all(FLERR, "Undefined solids group id in pairstyle mdpdsolidwall" );
   solids_groupbit = group->bitmask[solids_group];
+
+  if ((fluids_group = group->find(arg[4])) == -1)
+    error->all(FLERR, "Undefined fluids group id in pairstyle mdpdsolidwall" );
+  fluids_groupbit = group->bitmask[fluids_group];
 
   // initialize Marsaglia RNG with processor-unique seed
 
@@ -401,6 +406,7 @@ void PairMDPDSolidWall::write_restart_settings(FILE *fp)
   fwrite(&cut_global,sizeof(double),1,fp);
   fwrite(&seed,sizeof(int),1,fp);
   fwrite(&solids_groupbit,sizeof(int),1,fp);
+  fwrite(&fluids_groupbit,sizeof(int),1,fp);
   fwrite(&mix_flag,sizeof(int),1,fp);
 }
 
@@ -415,12 +421,14 @@ void PairMDPDSolidWall::read_restart_settings(FILE *fp)
     fread(&cut_global,sizeof(double),1,fp);
     fread(&seed,sizeof(int),1,fp);
     fread(&solids_groupbit,sizeof(int),1,fp);
+    fread(&fluids_groupbit,sizeof(int),1,fp);
     fread(&mix_flag,sizeof(int),1,fp);
   }
   MPI_Bcast(&temperature,1,MPI_DOUBLE,0,world);
   MPI_Bcast(&cut_global,1,MPI_DOUBLE,0,world);
   MPI_Bcast(&seed,1,MPI_INT,0,world);
   MPI_Bcast(&solids_groupbit,1,MPI_INT,0,world);
+  MPI_Bcast(&fluids_groupbit,1,MPI_INT,0,world);
   MPI_Bcast(&mix_flag,1,MPI_INT,0,world);
 
   // initialize Marsaglia RNG with processor-unique seed

@@ -60,16 +60,21 @@ FixSolidWallMDPD::FixSolidWallMDPD(LAMMPS *lmp, int narg, char **arg) :
 {
   if (lmp->citeme) lmp->citeme->add(cite_fix_solidwall_mdpd);
 
-  if (strcmp(style,"abitrary/bc") != 0 && narg < 8)
-    error->all(FLERR,"Illegal fix abitrary/bc command: solids_group rho_wall cut_phi phi_c cut_rho");
+  if (strcmp(style,"abitrary/bc") != 0 && narg < 9)
+    error->all(FLERR,"Illegal fix abitrary/bc command: solids_group fluids_group rho_wall cut_phi phi_c cut_rho");
 
   if ((solids_group = group->find(arg[3])) == -1)
     error->all(FLERR, "Undefined solids group id in fix mdpdsolidwall command" );
   solids_groupbit = group->bitmask[solids_group];
-  rho_wall = force->numeric(FLERR,arg[4]);
-  cut_phi = force->numeric(FLERR,arg[5]);
-  phi_c = force->numeric(FLERR,arg[6]);
-  cut_rho = force->numeric(FLERR,arg[7]);
+
+  if ((fluids_group = group->find(arg[4])) == -1)
+    error->all(FLERR, "Undefined fluids group id in fix mdpdsolidwall command" );
+  fluids_groupbit = group->bitmask[fluids_group];
+
+  rho_wall = force->numeric(FLERR,arg[5]);
+  cut_phi = force->numeric(FLERR,arg[6]);
+  phi_c = force->numeric(FLERR,arg[7]);
+  cut_rho = force->numeric(FLERR,arg[8]);
 
   newton_pair = force->newton_pair;
   if (newton_pair) comm_reverse = 1;
@@ -186,7 +191,7 @@ void FixSolidWallMDPD::post_integrate()
 
       if (r < h)
       {
-        if ((mask[i] & solids_groupbit) && ~(mask[j] & solids_groupbit))
+        if ((mask[i] & solids_groupbit) && (mask[j] & fluids_groupbit))
         {
           r_inv = 1.0/r;
           phi[j] += (h+3.0*r) * (h-r) * (h-r) * (h-r) * phi_factor;
@@ -195,7 +200,7 @@ void FixSolidWallMDPD::post_integrate()
           nw[j][1] += tmp * dely * r_inv;
           nw[j][2] += tmp * delz * r_inv;
         }
-        else if ((mask[j] & solids_groupbit) && ~(mask[i] & solids_groupbit))
+        else if ((mask[j] & solids_groupbit) && (mask[i] & fluids_groupbit))
         {
           r_inv = 1.0/r;
           phi[i] += (h+3.0*r) * (h-r) * (h-r) * (h-r) * phi_factor;
@@ -210,7 +215,7 @@ void FixSolidWallMDPD::post_integrate()
   if (newton_pair) comm->reverse_comm_fix(this,5);
 
   for (i = 0; i < nlocal; i++)
-  if ( (mask[i] & groupbit) && phi[i] > phi_c) {
+  if ( (mask[i] & fluids_groupbit) && phi[i] > phi_c) {
      dtfm = dtf / mass[type[i]];
 
      norm_inv = 1.0/sqrt(nw[i][0]*nw[i][0] + nw[i][1]*nw[i][1] + nw[i][2]*nw[i][2]);
