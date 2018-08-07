@@ -181,7 +181,8 @@ void FixSolidWallMDPD::post_integrate()
 
       h = cut_rho;
       if (r < h) {
-        wf = (h + 3.0*r)*(h - r)*(h - r)*(h - r)*rho_factor;
+        //wf = (h + 3.0*r)*(h - r)*(h - r)*(h - r)*rho_factor; // Not to use Lucy Kernel
+        wf = 15.0/2.0/const_pi/h/h/h*(1.0-r/h)*(1.0-r/h);
         rho[i] += mass[jtype]*wf;
         if (newton_pair || j < nlocal)
           rho[j] += mass[itype]*wf;
