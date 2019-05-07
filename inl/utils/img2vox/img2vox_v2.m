@@ -3,15 +3,13 @@ fprintf('#                                                           #\n');
 fprintf('# IMG2VOX v2.0                                              #\n');
 fprintf('# --- By Yidong Xia & Joshua Kane (Idaho National Lab)      #\n');
 fprintf('# --- This MATLAB code is designed to:                      #\n');
-fprintf('#     * Find 10 largest pores and create wall layers        #\n');
+fprintf('#     * Find N largest pores and create wall layers         #\n');
 fprintf('#     * Output these pores & wall as individual data files  #\n');
 fprintf('#                                                           #\n');
 fprintf('#############################################################\n');
 
-%{
-User defines the number of pores they want to index seperately
-%}
-nRegions = 10;
+fprintf("Input the number of connected pores to index seperately:\n");
+nRegions = sscanf(chr,'%i');
 
 %{
 Open a MATLAB built-in GUI to look for image files.
@@ -51,32 +49,36 @@ else
     BW3D = false( imgSize(1), imgSize(2), nFiles );
 end
 
-%{
-Serial-reading of images to assign values in BW3D matrix
-%}
+fprintf("Start reading images to assign values in BW3D matrix ... ");
 for iFile=1:nFiles
     BW3D(:,:,iFile) = imread( [pathName fileName(iFile,:)] );
 end
+fprintf("Done.\n");
 
 %{
 Delete variables not further used from Workspace
 %}
 clear fileName nFiles iFile img imgSize ans
 
-%{
-Pad volume with a 1 voxel thick layer.
-Determine size of volume for later use.
-Create pore index and index all pores.
-%}
+fprintf("Start padding volume with a 1 voxel thick layer ... ");
 BW3DP = padarray(BW3D,[1,1,1]);
+fprintf("Done.\n");
+
+fprintf("Start determining size of volume for later use ... ");
 sizeBW3DP = size(BW3DP);
+fprintf("Done.\n");
+
+fprintf("Start creating pore index and index all pores ... ");
 CC = bwconncomp(BW3DP,26);
+fprintf("Done.\n");
 
 %{
 Get the number of voxels in each connected pore network
 ordered by volume from large to small
 %}
+fprintf("Start sorting pores ... ");
 [~,Idx] = sort(cellfun(@numel,CC.PixelIdxList),'descend');
+fprintf("Done.\n");
 
 %{
 For the N-th largest pores,
@@ -85,37 +87,35 @@ Here the shell is one layer of voxels thick.
 Slight modification is needed in the 2nd for loop below
 as well as the pad sizes of volumes
 %}
-
-%{
-We only need the information from the N-th largest pores
-%}
+fprintf("Start gathering information for the N-th largest pores ... ");
 DD = CC;
 DD.NumObjects = nRegions;
 DD.PixelIdxList = [];
 for ii = 1 : nRegions
     DD.PixelIdxList{ii} = CC.PixelIdxList{Idx(ii)};
 end
+fprintf("Done.\n");
 
 %{
 No longer need this
 %}
 clear CC
 
-%{
-Extract bounding box and "Cropped Image" of individual pores
-%}
+fprintf("Start extracting bounding box and 'Cropped Image' of pores ... ");
 stats = regionprops(DD,'BoundingBox','Image');
+fprintf("Done.\n");
 
 %{
 Pre-allocation
 %}
+fprintf("Start pre-allocating large matrices ... ");
 PORE = [];
 WALL = [];
+fprintf("Done.\n");
 
-%{
-Loop over N largest pores
-%}
+fprintf("Start looping over N largest pore region ...\n");
 for ii = 1 : nRegions
+    fprintf("In region No. %i\n", ii);
     %{
     Determine 3D coordinates of all voxels in Pore ii
     %}
@@ -149,6 +149,8 @@ for ii = 1 : nRegions
 
     numVoxPore = size(PORE,1);
     numVoxWall = size(WALL,1);
+    fprintf(" . Number of voxel for pore = %i\n", numVoxPore);
+    fprintf(" . Number of voxel for wall = %i\n", numVoxWall);
 
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.info.txt']];
     fileID = fopen(outFileName,'w');
@@ -164,19 +166,23 @@ for ii = 1 : nRegions
         min(Z_pore),max(Z_pore));
     fclose(fileID);
 
+    fprintf(" . Start saving pore voxel data to file ... ");
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.pore.txt']];
     fileID = fopen(outFileName,'w');
     for i = 1 : numVoxPore
         fprintf(fileID,'%d %d %d\n',PORE(i,1),PORE(i,2),PORE(i,3));
     end
     fclose(fileID);
+    fprintf("Done.\n");
 
+    fprintf(" . Start saving wall voxel data to file ... ");
     outFileName = [pathName,['region.' num2str(ii,'%02d') '.wall.txt']];
     fileID = fopen(outFileName,'w');
     for i = 1 : numVoxWall
         fprintf(fileID,'%d %d %d\n',WALL(i,1),WALL(i,2),WALL(i,3));
     end
     fclose(fileID);
+    fprintf("Done.\n");
 
     %{
     Remove pore ii from the volume
@@ -191,6 +197,8 @@ clear R_wall C_wall Z_wall
 clear R_pore C_pore Z_pore
 clear PORE WALL
 clear stats
+
+fprintf("Done processing ...\n");
 
 %Unused script
 %{
