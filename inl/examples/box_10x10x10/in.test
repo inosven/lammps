@@ -1,0 +1,74 @@
+############### set variables for convenience
+
+### model parameters
+
+variable	kBT		equal 1.0
+variable	seed		equal 2654868
+variable	cut_att		equal 1.00
+variable	cut_rep		equal 0.75
+variable	cut_rho		equal 0.75
+variable	cut_phi		equal 1.00
+variable	skin		equal 0.3*${cut_att}
+
+variable	rho_solids	equal 8.0
+variable	A_att_11	equal -40 # solids--solids
+variable	A_att_12	equal -40 # solids--fluid1
+variable	A_att_22	equal -40 # fluid1--fluid1
+variable	B_rep		equal 25
+variable	gamma		equal 4.5 # 18.0
+variable	mass_1		equal 1
+variable	mass_2		equal 1
+
+variable	type_solids	equal 1
+variable	type_fluid1	equal 2
+variable	phi_c		equal 0.5
+
+### runtime parameters
+
+variable	dt		equal 0.01
+
+############### set units, dimension and global boundary type
+
+units		lj
+dimension	3
+boundary	p p p
+neighbor	${skin} bin
+neigh_modify	every 1 delay 0 check yes
+atom_style	mdpdsolidwall
+
+region          box block 0 10 0 10 0 10 units box
+create_box      2 box
+create_atoms    2 random 7000 574856 box
+
+group		group_solids type ${type_solids}
+group		group_fluid1 type ${type_fluid1}
+group		group_fluids union group_fluid1
+
+############### specify bead-to-bead pair style and coefficients
+
+pair_style	mdpdsolidwall ${kBT} ${cut_att} ${seed} group_solids group_fluids
+
+pair_coeff	1 1 ${A_att_11} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
+pair_coeff	1 2 ${A_att_12} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
+pair_coeff	2 2 ${A_att_22} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
+
+############### specify unit mass
+
+mass		1 ${mass_1}
+mass		2 ${mass_2}
+
+############### specify time step size
+
+timestep	${dt}
+
+############### necessary to have this BC to compute local density
+
+fix		BC all solidwall/mdpd group_solids group_fluids ${rho_solids} ${cut_phi} ${phi_c} ${cut_rho}
+
+fix             TIME_INTEGRATE group_fluids mvv/mdpd 0.5
+
+############### specify thermodynamic output frequency
+
+thermo		100
+
+run	        1000
