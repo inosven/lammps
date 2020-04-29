@@ -6,6 +6,8 @@ variable	kBT		equal 1.0
 variable	seed		equal 2654868
 variable	cut_att		equal 1.00
 variable	cut_rep		equal 0.75
+variable	cut_dis		equal 1.00
+variable	pow_dis		equal 2.00
 variable	cut_rho		equal 0.75
 variable	cut_phi		equal 1.00
 variable	skin		equal 0.3*${cut_att}
@@ -57,11 +59,11 @@ group		group_fluids union group_fluid1 group_fluid2
 
 pair_style	mdpdsolidwall ${kBT} ${cut_att} ${seed} group_solids group_fluids
 
-pair_coeff	1 1 ${A_att_11} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
-pair_coeff	1 2 ${A_att_12} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
-pair_coeff	2 2 ${A_att_22} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
-#pair_coeff	2 3 ${A_att_23} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
-#pair_coeff	3 3 ${A_att_33} ${B_rep} ${gamma} ${cut_att} ${cut_rep}
+pair_coeff	1 1 ${A_att_11} ${B_rep} ${gamma} ${cut_att} ${cut_rep} ${cut_dis} ${pow_dis}
+pair_coeff	1 2 ${A_att_12} ${B_rep} ${gamma} ${cut_att} ${cut_rep} ${cut_dis} ${pow_dis}
+pair_coeff	2 2 ${A_att_22} ${B_rep} ${gamma} ${cut_att} ${cut_rep} ${cut_dis} ${pow_dis}
+#pair_coeff	2 3 ${A_att_23} ${B_rep} ${gamma} ${cut_att} ${cut_rep} ${cut_dis} ${pow_dis}
+#pair_coeff	3 3 ${A_att_33} ${B_rep} ${gamma} ${cut_att} ${cut_rep} ${cut_dis} ${pow_dis}
 
 ############### specify unit mass
 

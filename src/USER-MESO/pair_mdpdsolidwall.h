@@ -46,6 +46,8 @@ class PairMDPDSolidWall : public Pair {
   int solids_group, solids_groupbit;
   int fluids_group, fluids_groupbit;
   double **cut, **cut_r;
+  double **cut_dis; // extra parameter in dissipative force from original mDPD
+  double **pow_dis; // extra parameter in dissipative force from original mDPD
   double **A_att,**B_rep;
   double **gamma,**sigma;
   class RanMars *random;

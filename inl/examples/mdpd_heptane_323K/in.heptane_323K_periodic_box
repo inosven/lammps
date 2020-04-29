@@ -13,9 +13,9 @@ variable	cut_phi		equal 1.00
 variable	skin		equal 0.3*${cut_att}
 
 variable	rho_solids	equal 8.0
-variable	A_att_11	equal -40 # solids--solids
-variable	A_att_12	equal -40 # solids--fluid1
-variable	A_att_22	equal -40 # fluid1--fluid1
+variable	A_att_11	equal -34 # solids--solids
+variable	A_att_12	equal -34 # solids--fluid1
+variable	A_att_22	equal -34 # fluid1--fluid1
 variable	B_rep		equal 25
 variable	gamma		equal 4.5 # 18.0
 variable	mass_1		equal 1
@@ -40,7 +40,7 @@ atom_style	mdpdsolidwall
 
 region          box block 0 10 0 10 0 10 units box
 create_box      2 box
-create_atoms    2 random 7000 574856 box
+create_atoms    2 random 6000 574856 box
 
 group		group_solids type ${type_solids}
 group		group_fluid1 type ${type_fluid1}
@@ -70,7 +70,7 @@ fix		BC all solidwall/mdpd group_solids group_fluids ${rho_solids} ${cut_phi} ${
 fix             TIME_INTEGRATE group_fluids mvv/mdpd 0.5
 
 ############### specify thermodynamic output frequency
-
+variable        pp equal press 
+fix             5  all ave/time 100 60 10000 v_pp file press.txt mode scalar
 thermo		100
-
-run	        1000
+run	        10000

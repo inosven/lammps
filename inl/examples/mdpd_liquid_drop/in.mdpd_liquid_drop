@@ -25,10 +25,10 @@ create_atoms	1 region regID_ini
 ############### define pair style and its interaction coefficients
 pair_style	hybrid/overlay mdpd/rhosum mdpd 1.0 1.0 9872598
 pair_coeff	1 1 mdpd/rhosum 0.75
-#pair_coeff	1 1 mdpd -15.0 25.0 4.5 1.0 0.75
-#pair_coeff	1 1 mdpd -21.0 25.0 4.5 1.0 0.75
-#pair_coeff	1 1 mdpd -26.0 25.0 4.5 1.0 0.75
-pair_coeff	1 1 mdpd -50.0 25.0 4.5 1.0 0.75
+#pair_coeff	1 1 mdpd -15.0 25.0 4.5 1.0 0.75 1.0 2.0
+#pair_coeff	1 1 mdpd -21.0 25.0 4.5 1.0 0.75 1.0 2.0
+#pair_coeff	1 1 mdpd -26.0 25.0 4.5 1.0 0.75 1.0 2.0
+pair_coeff	1 1 mdpd -50.0 25.0 4.5 1.0 0.75 1.0 2.0
 mass		1 1.0
 
 ############### store velocity in ghost atoms

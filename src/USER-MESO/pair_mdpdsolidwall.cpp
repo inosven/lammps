@@ -80,6 +80,8 @@ PairMDPDSolidWall::~PairMDPDSolidWall()
     memory->destroy(B_rep);
     memory->destroy(gamma);
     memory->destroy(sigma);
+    memory->destroy(cut_dis);
+    memory->destroy(pow_dis);
   }
   if (random) delete random;
 }
@@ -169,7 +171,9 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
         wc = 1.0 - r/cut[itype][jtype];
         wc_r = 1.0 - r/cut_r[itype][jtype];
         wc_r = MAX(wc_r,0.0);
-        wr = wc;
+        //wr = wc;
+        // ... cut-off range for dissipative force is a new parameter
+        wr = 1.0 - r/cut_dis[itype][jtype];
 
         rhoj = rho[j];
         randnum = random->gaussian();
@@ -177,6 +181,8 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
 
         fpair = A_att[itype][jtype]*wc + B_rep[itype][jtype]*(rhoi+rhoj)*wc_r;
         fpair -= gamma_e*wr*wr*dot*rinv;
+        // ... power index for dissipative force is a new parameter (do not use power function unless you have to)
+        //fpair -= gamma_e * pow(wr,pow_dis[itype][jtype]) * dot * rinv;
         fpair += sigma_e*wr*randnum*dtinvsqrt;
         fpair *= factor_dpd*rinv;
 
@@ -190,7 +196,9 @@ void PairMDPDSolidWall::compute(int eflag, int vflag)
         }
 
         if (eflag) {
-          evdwl = 0.5*A_att[itype][jtype]*cut[itype][jtype] * wr*wr + 0.5*B_rep[itype][jtype]*cut_r[itype][jtype]*(rhoi+rhoj)*wc_r*wc_r;
+          //evdwl = 0.5*A_att[itype][jtype]*cut[itype][jtype] * wr*wr + 0.5*B_rep[itype][jtype]*cut_r[itype][jtype]*(rhoi+rhoj)*wc_r*wc_r;
+          // ... a possible bux fix -> change wr to wc
+          evdwl = 0.5*A_att[itype][jtype]*cut[itype][jtype] * wc*wc + 0.5*B_rep[itype][jtype]*cut_r[itype][jtype]*(rhoi+rhoj)*wc_r*wc_r;
           evdwl *= factor_dpd;
         }
 
@@ -224,6 +232,8 @@ void PairMDPDSolidWall::allocate()
   memory->create(B_rep,n+1,n+1,"pair:B_rep");
   memory->create(gamma,n+1,n+1,"pair:gamma");
   memory->create(sigma,n+1,n+1,"pair:sigma");
+  memory->create(cut_dis,n+1,n+1,"pair:cut_dis");
+  memory->create(pow_dis,n+1,n+1,"pair:pow_dis");
 
 }
 
@@ -273,7 +283,7 @@ void PairMDPDSolidWall::settings(int narg, char **arg)
 
 void PairMDPDSolidWall::coeff(int narg, char **arg)
 {
-  if(narg != 7 ) error->all(FLERR,"Incorrect args for pair coefficients:\n itype jtype A B gamma cutA cutB");
+  if(narg != 9 ) error->all(FLERR,"Incorrect args for pair coefficients:\n itype jtype A B gamma cutA cutB cutDis powDis");
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
@@ -285,6 +295,8 @@ void PairMDPDSolidWall::coeff(int narg, char **arg)
   double gamma_one = force->numeric(FLERR,arg[4]);
   double cut_one = force->numeric(FLERR,arg[5]);
   double cut_two = force->numeric(FLERR,arg[6]);
+  double cut_three = force->numeric(FLERR,arg[7]);
+  double pow_one = force->numeric(FLERR,arg[8]);
 
   if(cut_one < cut_two) error->all(FLERR,"Incorrect args for pair coefficients:\n cutA should be larger than cutB.");
 
@@ -296,6 +308,8 @@ void PairMDPDSolidWall::coeff(int narg, char **arg)
       gamma[i][j] = gamma_one;
       cut[i][j] = cut_one;
       cut_r[i][j] = cut_two;
+      cut_dis[i][j] = cut_three;
+      pow_dis[i][j] = pow_one;
       setflag[i][j] = 1;
       count++;
     }
@@ -337,6 +351,8 @@ double PairMDPDSolidWall::init_one(int i, int j)
   B_rep[j][i] = B_rep[i][j];
   gamma[j][i] = gamma[i][j];
   sigma[j][i] = sigma[i][j];
+  cut_dis[j][i] = cut_dis[i][j];
+  pow_dis[j][i] = pow_dis[i][j];
 
   return cut[i][j];
 }
@@ -359,6 +375,8 @@ void PairMDPDSolidWall::write_restart(FILE *fp)
         fwrite(&gamma[i][j],sizeof(double),1,fp);
         fwrite(&cut[i][j],sizeof(double),1,fp);
         fwrite(&cut_r[i][j],sizeof(double),1,fp);
+        fwrite(&cut_dis[i][j],sizeof(double),1,fp);
+        fwrite(&pow_dis[i][j],sizeof(double),1,fp);
       }
     }
 }
@@ -386,12 +404,16 @@ void PairMDPDSolidWall::read_restart(FILE *fp)
           fread(&gamma[i][j],sizeof(double),1,fp);
           fread(&cut[i][j],sizeof(double),1,fp);
           fread(&cut_r[i][j],sizeof(double),1,fp);
+          fread(&cut_dis[i][j],sizeof(double),1,fp);
+          fread(&pow_dis[i][j],sizeof(double),1,fp);
         }
         MPI_Bcast(&A_att[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&B_rep[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&gamma[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&cut[i][j],1,MPI_DOUBLE,0,world);
         MPI_Bcast(&cut_r[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&cut_dis[i][j],1,MPI_DOUBLE,0,world);
+        MPI_Bcast(&pow_dis[i][j],1,MPI_DOUBLE,0,world);
       }
     }
 }
@@ -456,7 +478,7 @@ void PairMDPDSolidWall::write_data_all(FILE *fp)
 {
   for (int i = 1; i <= atom->ntypes; i++)
     for (int j = i; j <= atom->ntypes; j++)
-      fprintf(fp,"%d %d %g %g %g %g %g\n",i,j,A_att[i][j],B_rep[i][j],gamma[i][j],cut[i][j],cut_r[i][j]);
+      fprintf(fp,"%d %d %g %g %g %g %g %g %g\n",i,j,A_att[i][j],B_rep[i][j],gamma[i][j],cut[i][j],cut_r[i][j],cut_dis[i][j],pow_dis[i][j]);
 }
 
 double PairMDPDSolidWall::effective_factor(double phi, double rcw)
