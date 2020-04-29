@@ -9,7 +9,12 @@ fprintf('#                                                           #\n');
 fprintf('#############################################################\n');
 
 fprintf("Input the number of connected pores to index seperately:\n");
-nRegions = sscanf(chr,'%i');
+nRegions = 1;
+
+
+%{
+sscanf(chr,'%i');
+%}
 
 %{
 Open a MATLAB built-in GUI to look for image files.
